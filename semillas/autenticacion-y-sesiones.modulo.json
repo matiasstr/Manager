@@ -1,0 +1,110 @@
+{
+  "format": "manager-modulo/1",
+  "name": "Autenticación y sesiones",
+  "description": "Login, reset de contraseña, 2FA, JWT y account takeover.",
+  "embedder": "",
+  "cards": [
+    {
+      "question": "¿Qué pruebo en el login?",
+      "answer": "Fuerza bruta respetando el rate-limit (sin pasarte), enumeración de usuarios (mensajes distintos para usuario válido e inválido), fallas en el reset de contraseña, 2FA que se puede saltear, y respuestas que filtran si el usuario existe.",
+      "kind": "procedimiento",
+      "tags": [
+        "auth",
+        "login"
+      ],
+      "variants": [
+        "¿Qué testeo en la pantalla de login?",
+        "¿Qué fallas busco en el inicio de sesión?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo pruebo el flujo de reset de contraseña?",
+      "answer": "Mirá si el token es predecible, no expira o se puede reusar; si podés cambiar el host o el email en el request para que el link llegue a otra parte; y si al pedir el reset de otra cuenta se filtra el token en la respuesta.",
+      "kind": "procedimiento",
+      "tags": [
+        "auth",
+        "reset",
+        "password"
+      ],
+      "variants": [
+        "¿Cómo testeo el olvidé mi contraseña?",
+        "¿Qué fallas tiene el reset de password?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué miro en un JWT?",
+      "answer": "El header (alg), el payload (claims como user, role, exp) y la firma. Buscá alg:none, firma que no se verifica, secreto HMAC débil que se puede romper por fuerza bruta, o confusión de algoritmo (RS256 a HS256 usando la clave pública como secreto).",
+      "kind": "procedimiento",
+      "tags": [
+        "auth",
+        "jwt"
+      ],
+      "variants": [
+        "¿Cómo ataco un JWT?",
+        "¿Qué reviso en un token JWT?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo pruebo fallas de autorización en la sesión?",
+      "answer": "Deslogueá y repetí requests: ¿siguen funcionando? Cambiá tu rol en el token o la cookie. Accedé a endpoints de admin con una sesión normal. Verificá si la sesión se invalida al cambiar la contraseña.",
+      "kind": "procedimiento",
+      "tags": [
+        "auth",
+        "sesion"
+      ],
+      "variants": [
+        "¿Cómo testeo la sesión?",
+        "¿Qué pruebo sobre los tokens de sesión?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo busco un bypass de 2FA?",
+      "answer": "Buscá un endpoint que complete el login sin validar el segundo factor, un código que no expira o no se invalida tras usarse, fuerza bruta del código de 6 dígitos sin límite, o poder saltear el paso cambiando la respuesta o la redirección.",
+      "kind": "advertencia",
+      "tags": [
+        "auth",
+        "2fa",
+        "bypass"
+      ],
+      "variants": [
+        "¿Cómo salteo el 2FA?",
+        "¿Qué fallas tiene el segundo factor?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿De dónde suele venir un account takeover?",
+      "answer": "De un reset de contraseña roto, un IDOR en el cambio de email, un OAuth mal configurado, o un XSS con robo de sesión. Es de lo mejor pagado. Demostralo con dos cuentas tuyas, tomando control de la segunda desde la primera.",
+      "kind": "hecho",
+      "tags": [
+        "auth",
+        "ato",
+        "impacto"
+      ],
+      "variants": [
+        "¿Cómo logro un account takeover?",
+        "¿Qué lleva a tomar control de una cuenta?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué reviso en OAuth o SSO?",
+      "answer": "El redirect_uri (un valor laxo permite robar el code o el token con un open redirect), la ausencia del parámetro state (CSRF de login), y si el token de un cliente sirve en otro. Un redirect_uri mal validado suele terminar en account takeover.",
+      "kind": "procedimiento",
+      "tags": [
+        "auth",
+        "oauth",
+        "sso"
+      ],
+      "variants": [
+        "¿Qué fallas tiene OAuth?",
+        "¿Cómo ataco el login con Google o SSO?"
+      ],
+      "source": "semilla"
+    }
+  ]
+}

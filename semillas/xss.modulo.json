@@ -1,0 +1,107 @@
+{
+  "format": "manager-modulo/1",
+  "name": "XSS",
+  "description": "Ejecutar JavaScript en el navegador de otros usuarios de la aplicación.",
+  "embedder": "",
+  "cards": [
+    {
+      "question": "¿Qué tipos de XSS hay?",
+      "answer": "Reflejado (el payload viaja en el request y vuelve en la respuesta), Almacenado (queda guardado y se ejecuta para otros usuarios) y DOM (JavaScript del cliente mete entrada en un sink peligroso). El almacenado suele ser el de mayor impacto.",
+      "kind": "definicion",
+      "tags": [
+        "xss",
+        "tipos"
+      ],
+      "variants": [
+        "¿Cuáles son los tipos de XSS?",
+        "¿Qué diferencia hay entre XSS reflejado y almacenado?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo pruebo XSS reflejado?",
+      "answer": "Meté un marcador único (ej. xss7319) en cada parámetro y buscalo en la respuesta. Donde aparezca, mirá el contexto (HTML, atributo, script, URL) y probá un payload que rompa ese contexto. Confirmá la ejecución con algo visible; si el programa prohíbe alert, usá print() o un callback.",
+      "kind": "procedimiento",
+      "tags": [
+        "xss",
+        "reflejado"
+      ],
+      "variants": [
+        "¿Cómo testeo XSS reflejado?",
+        "¿Cómo busco un XSS en un parámetro?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo encuentro DOM XSS?",
+      "answer": "Buscá sinks peligrosos en el JavaScript (innerHTML, document.write, eval, location, .html()) y seguí de dónde viene la fuente (location.hash, document.referrer, postMessage). Las DevTools y herramientas como DOM Invader ayudan a rastrearlo.",
+      "kind": "procedimiento",
+      "tags": [
+        "xss",
+        "dom"
+      ],
+      "variants": [
+        "¿Cómo pruebo DOM XSS?",
+        "¿Qué sinks miro para XSS del lado del cliente?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué hace valioso a un XSS?",
+      "answer": "El almacenado que se ejecuta en la sesión de otros usuarios, sobre todo de admin, y permite robar sesión o hacer acciones en su nombre. Un reflejado con mucha interacción o un self-XSS valen poco o nada. Mostrá un impacto concreto.",
+      "kind": "hecho",
+      "tags": [
+        "xss",
+        "impacto"
+      ],
+      "variants": [
+        "¿Qué XSS se paga bien?",
+        "¿Qué hace que un XSS tenga impacto?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Por qué un self-XSS no suele pagarse?",
+      "answer": "Porque solo afecta a tu propia cuenta. Para que valga, encadenalo (por ejemplo con un CSRF que setee el valor malicioso en la víctima) o demostrá que puede llegar a ejecutarse en otros usuarios.",
+      "kind": "advertencia",
+      "tags": [
+        "xss",
+        "self-xss"
+      ],
+      "variants": [
+        "¿Sirve un self-XSS?",
+        "¿Por qué me rechazan un self-XSS?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo evado filtros de XSS?",
+      "answer": "Si filtran <script>: probá handlers de eventos (onerror, onload), etiquetas alternativas (<img>, <svg>), mayúsculas mezcladas, codificación y romper el contexto del atributo. Documentá el filtro y cómo lo pasaste.",
+      "kind": "procedimiento",
+      "tags": [
+        "xss",
+        "evasion",
+        "filtros"
+      ],
+      "variants": [
+        "¿Cómo salteo el filtro de XSS?",
+        "¿Qué pruebo si bloquean la etiqueta script?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Por qué importa el contexto de inyección en XSS?",
+      "answer": "Dónde cae tu entrada define el payload: dentro de <script> necesitás cerrar la cadena o el JS; en un atributo, cerrar las comillas; en HTML, abrir una etiqueta. Identificá el contexto antes de tirar payloads a ciegas.",
+      "kind": "definicion",
+      "tags": [
+        "xss",
+        "contexto"
+      ],
+      "variants": [
+        "¿Qué es el contexto de inyección?",
+        "¿Por qué el mismo payload no siempre funciona?"
+      ],
+      "source": "semilla"
+    }
+  ]
+}

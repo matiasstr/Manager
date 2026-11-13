@@ -1,0 +1,110 @@
+{
+  "format": "manager-modulo/1",
+  "name": "Reporte y triage",
+  "description": "Escribir el reporte, estimar severidad y evitar errores que cuestan el pago.",
+  "embedder": "",
+  "cards": [
+    {
+      "question": "¿Cómo escribo un buen reporte?",
+      "answer": "Título claro con el tipo de bug y el impacto. Resumen de una línea. Pasos para reproducir numerados y exactos (con cuenta de prueba, requests y respuestas). Impacto concreto para el negocio. Sugerencia de arreglo. Capturas o un video corto.",
+      "kind": "procedimiento",
+      "tags": [
+        "reporte",
+        "redaccion"
+      ],
+      "variants": [
+        "¿Cómo redacto el reporte?",
+        "¿Qué lleva un buen informe de bug?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué sube la severidad y el pago de un hallazgo?",
+      "answer": "El impacto real demostrado: datos sensibles, account takeover, RCE o acceso a sistemas internos. Un bug teórico sin impacto paga poco. Encadená fallas menores para mostrar un impacto mayor.",
+      "kind": "hecho",
+      "tags": [
+        "reporte",
+        "severidad",
+        "impacto"
+      ],
+      "variants": [
+        "¿Qué hace que paguen más?",
+        "¿Cómo aumento la severidad de un reporte?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo evito que me marquen el reporte como duplicado?",
+      "answer": "Si el bug es obvio o superficial, probablemente ya lo reportaron. Buscá fallas más profundas o en funciones nuevas. No podés ver otros reportes, pero los bugs de bajo esfuerzo suelen ser duplicados.",
+      "kind": "advertencia",
+      "tags": [
+        "reporte",
+        "duplicado"
+      ],
+      "variants": [
+        "¿Cómo evito un duplicado?",
+        "¿Por qué me rechazan por duplicado?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo calculo la severidad?",
+      "answer": "HackerOne usa CVSS. Pensá en el vector (red o local), los privilegios necesarios, la interacción del usuario, y el impacto en confidencialidad, integridad y disponibilidad. Sé honesto: inflar la severidad te baja la reputación.",
+      "kind": "procedimiento",
+      "tags": [
+        "reporte",
+        "cvss",
+        "severidad"
+      ],
+      "variants": [
+        "¿Cómo estimo el CVSS?",
+        "¿Cómo pongo la severidad de un bug?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué no debo hacer nunca al testear o reportar?",
+      "answer": "No accedas a datos de usuarios reales más de lo mínimo para probar, no pivotees a otros sistemas, no extraigas datos masivos, y no divulgues público antes del arreglo. Violarlo puede costarte el pago y la cuenta.",
+      "kind": "advertencia",
+      "tags": [
+        "reporte",
+        "reglas",
+        "etica"
+      ],
+      "variants": [
+        "¿Qué está prohibido al reportar?",
+        "¿Qué me puede banear de la plataforma?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué pasa después de enviar un reporte?",
+      "answer": "El equipo lo triagea: puede pedir más información, marcarlo duplicado o no aplica, o aceptarlo y pagar. Respondé rápido y con datos. Tu reputación y tus señales suben con reportes válidos y bajan con ruido.",
+      "kind": "hecho",
+      "tags": [
+        "reporte",
+        "triage"
+      ],
+      "variants": [
+        "¿Qué sucede tras mandar el bug?",
+        "¿Cómo es el proceso de triage?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo encadeno bugs para más impacto?",
+      "answer": "Un open redirect más un OAuth laxo da account takeover. Un IDOR de lectura más uno de escritura da control total. Un self-XSS más un CSRF de login lleva el XSS a la víctima. Preguntate siempre: esto, combinado con qué, da impacto real.",
+      "kind": "procedimiento",
+      "tags": [
+        "reporte",
+        "encadenar",
+        "impacto"
+      ],
+      "variants": [
+        "¿Cómo combino vulnerabilidades?",
+        "¿Cómo aumento el impacto encadenando bugs?"
+      ],
+      "source": "semilla"
+    }
+  ]
+}

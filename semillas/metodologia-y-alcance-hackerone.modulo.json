@@ -1,0 +1,106 @@
+{
+  "format": "manager-modulo/1",
+  "name": "Metodología y alcance (HackerOne)",
+  "description": "Cómo encarar un programa sin salirte del alcance ni romper las reglas.",
+  "embedder": "",
+  "cards": [
+    {
+      "question": "¿Qué es el scope de un programa de bug bounty?",
+      "answer": "El scope define qué activos (dominios, APIs, apps móviles) podés testear y cuáles no. Está en la Policy del programa, en las secciones in-scope y out-of-scope. Todo lo que no figure como in-scope se trata como fuera de alcance.",
+      "kind": "definicion",
+      "tags": [
+        "scope",
+        "hackerone",
+        "reglas"
+      ],
+      "variants": [
+        "¿Qué puedo testear en un programa?",
+        "¿Dónde dice qué está permitido atacar?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Puedo testear un subdominio que encontré pero no está listado en el scope?",
+      "answer": "No. Testear fuera de alcance viola las reglas del programa, puede ser ilegal y no se paga. Si el scope incluye un wildcard como *.ejemplo.com, los subdominios entran; si solo figura app.ejemplo.com, limitate a ese host. Ante la duda, no toques y preguntá por el canal del programa.",
+      "kind": "advertencia",
+      "tags": [
+        "scope",
+        "fuera-de-alcance"
+      ],
+      "variants": [
+        "¿Testeo un subdominio que no está en el scope?",
+        "Encontré un host nuevo, ¿puedo atacarlo?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué técnicas suelen estar prohibidas aunque el target esté in-scope?",
+      "answer": "DoS o stress testing, fuerza bruta agresiva, spam a usuarios reales, ingeniería social al personal, y automatización que degrade el servicio. Leé las secciones de out-of-scope y rules de la Policy antes de empezar: cada programa pone sus límites.",
+      "kind": "advertencia",
+      "tags": [
+        "reglas",
+        "prohibido"
+      ],
+      "variants": [
+        "¿Qué no puedo hacer aunque el host esté permitido?",
+        "¿Está permitido hacer fuerza bruta?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo encaro un target nuevo?",
+      "answer": "1) Leer la Policy y anotar scope, exclusiones y recompensas. 2) Mapear la superficie (subdominios, hosts, APIs) solo dentro del scope. 3) Usar la app como usuario normal para entenderla. 4) Elegir clases de bug según cómo es la app. 5) Probar con cuentas propias de test. 6) Documentar todo desde el principio.",
+      "kind": "procedimiento",
+      "tags": [
+        "metodologia",
+        "recon"
+      ],
+      "variants": [
+        "¿Por dónde empiezo con un objetivo nuevo?",
+        "¿Cuál es el flujo para atacar un programa?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué miro antes de lanzar requests automatizados?",
+      "answer": "Que el host esté in-scope, limitá la tasa de requests, usá un User-Agent identificable si el programa lo pide, y evitá endpoints de pago o de producción sensibles. Preferí Burp manual sobre escaneo masivo: muchos programas penalizan el ruido.",
+      "kind": "procedimiento",
+      "tags": [
+        "automatizacion",
+        "rate-limit"
+      ],
+      "variants": [
+        "¿Puedo correr un escáner contra el target?",
+        "¿Qué cuido antes de automatizar?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué información conviene guardar de cada target?",
+      "answer": "El scope exacto, las credenciales de prueba que creaste, los endpoints interesantes, qué ya probaste y con qué resultado, y capturas. Así no repetís trabajo ni te salís del alcance sin querer.",
+      "kind": "hecho",
+      "tags": [
+        "notas",
+        "organizacion"
+      ],
+      "variants": [
+        "¿Qué anoto de cada programa?",
+        "¿Qué registro mientras testeo?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Conviene empezar por programas públicos o privados?",
+      "answer": "Los privados suelen tener menos cazadores y más superficie sin tocar, pero requieren invitación y buena reputación. Los públicos tienen más competencia y más duplicados. Para aprender, elegí programas con scope amplio y triage con buena fama.",
+      "kind": "decision",
+      "tags": [
+        "estrategia"
+      ],
+      "variants": [
+        "¿Público o privado para arrancar?",
+        "¿Qué tipo de programa elijo?"
+      ],
+      "source": "semilla"
+    }
+  ]
+}

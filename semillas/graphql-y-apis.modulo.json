@@ -1,0 +1,95 @@
+{
+  "format": "manager-modulo/1",
+  "name": "GraphQL y APIs",
+  "description": "Superficie amplia donde suele fallar el control de acceso y el rate-limit.",
+  "embedder": "",
+  "cards": [
+    {
+      "question": "¿Cómo empiezo a testear GraphQL?",
+      "answer": "Probá la introspección (__schema) para sacar todo el esquema: tipos, queries y mutations. Si está deshabilitada, inferí campos por los mensajes de error y wordlists. Herramientas útiles: GraphQL Voyager, InQL y graphw00f.",
+      "kind": "procedimiento",
+      "tags": [
+        "graphql",
+        "introspeccion"
+      ],
+      "variants": [
+        "¿Por dónde arranco con GraphQL?",
+        "¿Cómo saco el esquema de GraphQL?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Por qué GraphQL es terreno fértil para bugs?",
+      "answer": "Un endpoint expone muchas operaciones. Es común que el control de acceso falle en mutations olvidadas, que haya BOLA en queries por id, y que falte rate-limit porque podés pedir mucho en una sola query.",
+      "kind": "hecho",
+      "tags": [
+        "graphql",
+        "superficie"
+      ],
+      "variants": [
+        "¿Qué tiene de especial GraphQL para bounty?",
+        "¿Por qué busco bugs en GraphQL?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué fallas busco en GraphQL?",
+      "answer": "BOLA o IDOR en queries con id, mutations sin autorización, exposición de campos sensibles, batching de queries para evadir el rate-limit, y DoS por anidamiento profundo. Para el DoS no tumbes el server: con mostrar la query grave alcanza.",
+      "kind": "procedimiento",
+      "tags": [
+        "graphql",
+        "fallas"
+      ],
+      "variants": [
+        "¿Qué pruebo en un endpoint GraphQL?",
+        "¿Qué vulnerabilidades tiene GraphQL?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo encuentro APIs o endpoints ocultos?",
+      "answer": "Mirá el JavaScript del front para endpoints no documentados, buscá archivos swagger u openapi, probá versiones viejas (/v1/ cuando usan /v2/), y métodos HTTP alternativos (PUT, DELETE, PATCH) donde solo esperan GET.",
+      "kind": "procedimiento",
+      "tags": [
+        "api",
+        "recon",
+        "endpoints"
+      ],
+      "variants": [
+        "¿Cómo descubro endpoints escondidos?",
+        "¿Dónde encuentro APIs no documentadas?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué es mass assignment y cómo lo pruebo?",
+      "answer": "En APIs que aceptan JSON, probá agregar campos que no deberías controlar: \"role\":\"admin\", \"isVerified\":true, \"balance\":999. Si el backend los acepta sin filtrar, es mass assignment y puede dar escalada de privilegios.",
+      "kind": "advertencia",
+      "tags": [
+        "api",
+        "mass-assignment",
+        "escalada"
+      ],
+      "variants": [
+        "¿Cómo pruebo mass assignment?",
+        "¿Qué pasa si agrego campos extra al JSON?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué diferencia hay entre BOLA y BFLA?",
+      "answer": "BOLA: accedés a objetos de otros usuarios cambiando un id. BFLA (Broken Function Level Authorization): accedés a funciones que tu rol no debería, como endpoints de admin. Ambas encabezan el OWASP API Top 10.",
+      "kind": "definicion",
+      "tags": [
+        "api",
+        "bola",
+        "bfla"
+      ],
+      "variants": [
+        "¿Qué es BFLA?",
+        "¿Diferencia entre BOLA y BFLA?"
+      ],
+      "source": "semilla"
+    }
+  ]
+}

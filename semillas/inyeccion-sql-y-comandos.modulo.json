@@ -1,0 +1,107 @@
+{
+  "format": "manager-modulo/1",
+  "name": "Inyección (SQL y comandos)",
+  "description": "Entrada del usuario que llega a una consulta SQL o al sistema operativo.",
+  "embedder": "",
+  "cards": [
+    {
+      "question": "¿Qué es una inyección SQL?",
+      "answer": "Cuando entrada del usuario se concatena en una consulta SQL sin sanitizar, podés alterar la consulta: leer otras tablas, saltear el login o, en casos graves, ejecutar comandos en el motor. Es una de las fallas clásicas de mayor impacto.",
+      "kind": "definicion",
+      "tags": [
+        "sqli",
+        "inyeccion"
+      ],
+      "variants": [
+        "¿Qué es SQLi?",
+        "¿Qué significa inyección SQL?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo detecto una inyección SQL?",
+      "answer": "Meté una comilla simple en parámetros y observá errores SQL o cambios de comportamiento. Probá lógica booleana (' OR '1'='1) y basada en tiempo (' OR SLEEP(5)-- -) si no hay salida visible. Usá sqlmap solo si el programa permite automatización y dentro del scope.",
+      "kind": "procedimiento",
+      "tags": [
+        "sqli",
+        "deteccion"
+      ],
+      "variants": [
+        "¿Cómo pruebo SQLi?",
+        "¿Cómo sé si un campo es inyectable?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Dónde pruebo SQLi además de los campos obvios?",
+      "answer": "En headers (User-Agent, X-Forwarded-For, Referer), cookies, parámetros JSON anidados, campos de búsqueda, y en filtros u ordenamientos (order by). Cualquier valor que termine en una consulta es candidato.",
+      "kind": "procedimiento",
+      "tags": [
+        "sqli",
+        "superficie"
+      ],
+      "variants": [
+        "¿Dónde más busco inyección SQL?",
+        "¿Qué entradas no obvias pruebo para SQLi?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué es una SQLi a ciegas?",
+      "answer": "No ves el resultado ni los errores. La confirmás por diferencias booleanas (la respuesta cambia según una condición verdadera o falsa) o por tiempo (retardos con SLEEP o WAITFOR). Es más lenta pero igual de válida.",
+      "kind": "definicion",
+      "tags": [
+        "sqli",
+        "ciega"
+      ],
+      "variants": [
+        "¿Qué es blind SQLi?",
+        "¿Cómo confirmo SQLi sin ver el resultado?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué es command injection?",
+      "answer": "Cuando la entrada del usuario llega a una llamada del sistema operativo. Metiendo ;, |, &&, $(...) o backticks podés ejecutar comandos. Buscalo en funciones de ping, conversión de archivos, utilidades de red o export.",
+      "kind": "definicion",
+      "tags": [
+        "command-injection",
+        "rce"
+      ],
+      "variants": [
+        "¿Qué es inyección de comandos?",
+        "¿Qué es OS command injection?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo confirmo command injection a ciegas?",
+      "answer": "Hacé que el server pegue a un canary tuyo: ; curl http://tu-canary o $(nslookup tu-dominio). Si ves la interacción DNS o HTTP, hay ejecución. No corras comandos destructivos: con una prueba de DNS alcanza para demostrar.",
+      "kind": "procedimiento",
+      "tags": [
+        "command-injection",
+        "canary"
+      ],
+      "variants": [
+        "¿Cómo verifico ejecución de comandos a ciegas?",
+        "¿Cómo pruebo RCE sin romper nada?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué falso positivo típico tiene la inyección por tiempo?",
+      "answer": "Los retardos pueden venir de la carga del servidor, no de tu payload. Repetí varias veces y compará la respuesta con y sin el payload antes de reportar una SQLi o command injection basada en tiempo.",
+      "kind": "advertencia",
+      "tags": [
+        "sqli",
+        "falso-positivo",
+        "tiempo"
+      ],
+      "variants": [
+        "¿Por qué un SLEEP puede engañarme?",
+        "¿Cómo evito falsos positivos por tiempo?"
+      ],
+      "source": "semilla"
+    }
+  ]
+}

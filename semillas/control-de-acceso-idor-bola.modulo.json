@@ -1,0 +1,108 @@
+{
+  "format": "manager-modulo/1",
+  "name": "Control de acceso (IDOR / BOLA)",
+  "description": "Acceder a datos o acciones de otros usuarios por fallas de autorización.",
+  "embedder": "",
+  "cards": [
+    {
+      "question": "¿Qué es un IDOR?",
+      "answer": "Insecure Direct Object Reference: la app usa un identificador (id numérico, uuid, nombre) para acceder a un objeto sin verificar que el usuario tenga permiso sobre él. Cambiando el id accedés a datos de otro usuario. En APIs se lo llama BOLA y es la falla número uno del OWASP API Top 10.",
+      "kind": "definicion",
+      "tags": [
+        "idor",
+        "bola",
+        "autorizacion"
+      ],
+      "variants": [
+        "¿Qué es un BOLA?",
+        "¿Qué significa referencia directa a objeto insegura?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo pruebo IDOR en una API REST?",
+      "answer": "Creá dos cuentas, A y B. Con A, capturá un request que acceda a un recurso tuyo (ej. GET /api/orders/123). Cambiá el id por uno de B, o incrementá y decrementá. Si te devuelve datos de B, es IDOR. Probá también PUT y DELETE, no solo lecturas.",
+      "kind": "procedimiento",
+      "tags": [
+        "idor",
+        "api"
+      ],
+      "variants": [
+        "¿Cómo testeo IDOR?",
+        "¿Cómo busco acceso a datos ajenos por id?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Dónde busco los identificadores para probar IDOR?",
+      "answer": "En la URL, parámetros de query, body JSON, headers personalizados y cookies. Mirá ids numéricos secuenciales, UUIDs que se filtran en otras respuestas, nombres de usuario y hashes predecibles.",
+      "kind": "procedimiento",
+      "tags": [
+        "idor",
+        "parametros"
+      ],
+      "variants": [
+        "¿Qué parámetros pruebo para IDOR?",
+        "¿Dónde están los ids que puedo cambiar?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Un UUID aleatorio descarta el IDOR?",
+      "answer": "No del todo. Si el UUID se filtra en otro endpoint (listados, búsquedas, mensajes, metadatos), igual podés obtenerlo y usarlo. Buscá dónde la app expone ids de otros usuarios antes de descartar la falla.",
+      "kind": "advertencia",
+      "tags": [
+        "idor",
+        "uuid"
+      ],
+      "variants": [
+        "¿Si usa UUID no hay IDOR?",
+        "¿El identificador aleatorio me frena?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo distingo escalada horizontal de vertical?",
+      "answer": "Horizontal: un usuario accede a datos de otro usuario del mismo rol (A ve lo de B). Vertical: un usuario común accede a funciones de administrador. Para la vertical, probá endpoints de admin con tu token normal y quitando o bajando parámetros de rol.",
+      "kind": "definicion",
+      "tags": [
+        "escalada",
+        "privilegios"
+      ],
+      "variants": [
+        "¿Qué es escalada horizontal y vertical?",
+        "¿Cómo pruebo llegar a funciones de admin?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué hace fuerte un reporte de IDOR?",
+      "answer": "Mostrar impacto real: datos sensibles de otra cuenta (PII, pagos) o una acción destructiva. Usá siempre dos cuentas tuyas, nunca datos de usuarios reales. Documentá el request y la respuesta con el id cambiado.",
+      "kind": "hecho",
+      "tags": [
+        "idor",
+        "reporte",
+        "impacto"
+      ],
+      "variants": [
+        "¿Cómo reporto bien un IDOR?",
+        "¿Qué pruebo para que valga el IDOR?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué error común hay al creer que encontré un IDOR?",
+      "answer": "Confundir ver tu propio dato por otro camino con un IDOR real. Confirmá que el objeto pertenece a una cuenta distinta que vos también controlás antes de reportar.",
+      "kind": "advertencia",
+      "tags": [
+        "idor",
+        "falso-positivo"
+      ],
+      "variants": [
+        "¿Cómo evito un falso positivo de IDOR?",
+        "¿Es IDOR si veo mi propio dato?"
+      ],
+      "source": "semilla"
+    }
+  ]
+}

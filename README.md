@@ -84,6 +84,18 @@ El modelo de embeddings por defecto es `jina-embeddings-v2-base-es` (español e 
 
 Límite real: un módulo responde lo que está cubierto por sus tarjetas. No razona sobre casos nuevos; para eso está la discusión.
 
+## Módulos de ejemplo
+
+En [`semillas/`](semillas/) hay 8 módulos de metodología de bug bounty **autorizado** (scope, IDOR/BOLA, SSRF, inyección, XSS, autenticación, GraphQL/APIs y reporte), 55 tarjetas que consultás sin LLM: dónde mirar y cómo confirmar cada clase de falla, siempre dentro del alcance del programa.
+
+Cargalos desde la interfaz (**Módulos → Importar módulo**, un `.json` por vez) o todos de una:
+
+```bash
+python semillas/generar.py --cargar http://127.0.0.1:8765
+```
+
+Son un punto de partida editable: agregá tus propias tarjetas y hallazgos desde la interfaz. El generador ([`semillas/generar.py`](semillas/generar.py)) tiene el contenido en texto plano, fácil de ampliar.
+
 ## Integración
 
 **API REST.** Documentación interactiva en `http://127.0.0.1:8765/docs`. Lo principal:

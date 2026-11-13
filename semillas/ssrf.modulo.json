@@ -1,0 +1,109 @@
+{
+  "format": "manager-modulo/1",
+  "name": "SSRF",
+  "description": "Hacer que el servidor pida recursos que vos elegís: servicios internos, metadata de cloud.",
+  "embedder": "",
+  "cards": [
+    {
+      "question": "¿Qué es un SSRF?",
+      "answer": "Server-Side Request Forgery: lográs que el servidor haga una petición (HTTP u otro protocolo) a un destino que vos controlás. Sirve para alcanzar servicios internos, la metadata de la nube o puertos internos que desde afuera no se ven.",
+      "kind": "definicion",
+      "tags": [
+        "ssrf"
+      ],
+      "variants": [
+        "¿Qué significa SSRF?",
+        "¿Qué es falsificación de petición del lado del servidor?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Dónde busco SSRF?",
+      "answer": "En parámetros que reciben URLs: webhooks, importar desde URL, generar PDF o thumbnail, previsualización de links, proxies, y parámetros como url=, callback= o image=. Cualquier función donde vos das una dirección y el server la trae.",
+      "kind": "procedimiento",
+      "tags": [
+        "ssrf",
+        "superficie"
+      ],
+      "variants": [
+        "¿Dónde aparece el SSRF?",
+        "¿Qué funciones son candidatas a SSRF?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo confirmo un SSRF a ciegas?",
+      "answer": "Usá un canary que controlás (Burp Collaborator, un webhook propio, un dominio tuyo). Si el servidor resuelve y pega a tu dominio, tenés al menos un SSRF ciego. Registrá la IP de origen: suele ser del rango interno del target.",
+      "kind": "procedimiento",
+      "tags": [
+        "ssrf",
+        "ciego",
+        "canary"
+      ],
+      "variants": [
+        "¿Cómo verifico un SSRF que no devuelve respuesta?",
+        "¿Cómo pruebo SSRF con un colaborador?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué hace grave a un SSRF en la nube?",
+      "answer": "Si el server corre en AWS, GCP o Azure, apuntar al endpoint de metadata (169.254.169.254) puede filtrar credenciales temporales. Es de los SSRF de mayor impacto y muchos programas lo pagan alto. Probá lo mínimo para demostrar, no extraigas de más.",
+      "kind": "hecho",
+      "tags": [
+        "ssrf",
+        "cloud",
+        "metadata",
+        "impacto"
+      ],
+      "variants": [
+        "¿Por qué el SSRF a metadata es tan grave?",
+        "¿Qué pasa con SSRF en AWS?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Cómo evado filtros de SSRF?",
+      "answer": "Si bloquean localhost o 127.0.0.1, probá 127.1, 0.0.0.0, [::1], la IP en decimal u octal, dominios que resuelven a una IP interna, redirecciones (tu URL devuelve un 302 hacia el destino interno) y variantes de mayúsculas. Documentá qué filtro evadiste.",
+      "kind": "procedimiento",
+      "tags": [
+        "ssrf",
+        "evasion",
+        "filtros"
+      ],
+      "variants": [
+        "¿Cómo salteo la protección de SSRF?",
+        "¿Qué bypass uso si bloquean localhost?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué cuidado tengo al probar SSRF?",
+      "answer": "No escanees redes internas enteras ni muevas datos: con demostrar acceso a un recurso interno o a la metadata alcanza. Escanear agresivo puede violar las reglas del programa y tumbar servicios.",
+      "kind": "advertencia",
+      "tags": [
+        "ssrf",
+        "reglas"
+      ],
+      "variants": [
+        "¿Qué no hago al testear SSRF?",
+        "¿Puedo escanear la red interna con SSRF?"
+      ],
+      "source": "semilla"
+    },
+    {
+      "question": "¿Qué diferencia hay entre SSRF ciego y completo?",
+      "answer": "Ciego: el server hace el request pero no te devuelve la respuesta, lo confirmás por el canary. Completo: te devuelve el contenido de lo que trajo. El completo suele valer más porque permite leer servicios internos.",
+      "kind": "definicion",
+      "tags": [
+        "ssrf",
+        "ciego"
+      ],
+      "variants": [
+        "¿SSRF ciego vs full?",
+        "¿Qué es un SSRF completo?"
+      ],
+      "source": "semilla"
+    }
+  ]
+}
