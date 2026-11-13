@@ -7,6 +7,7 @@ import logging
 import re
 import time
 from contextlib import asynccontextmanager
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response, StreamingResponse
@@ -41,6 +42,47 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Manager", version=__version__, lifespan=lifespan,
               description="Mini cerebro multiagente: discusión entre LLM gratuitas, memoria con RAG y módulos consultables sin LLM.")
 
+LOOPBACK = {"127.0.0.1", "localhost", "[::1]"}
+
+
+def blocked(headers: dict[str, str]) -> str:
+    """Este servidor no tiene login, así que solo debe obedecer a su propia interfaz.
+
+    - Host: si no es una dirección local se rechaza. Frena el DNS rebinding, con el que una página
+      externa consigue hablarle a 127.0.0.1 bajo otro nombre.
+    - Origin: si el pedido lo origina otra página web se rechaza. Sin esto, cualquier sitio que
+      visites podría abrir discusiones, envenenar la memoria o pisar tus keys.
+    """
+    host = headers.get("host", "").lower()
+    name = host.split("]")[0] + "]" if host.startswith("[") else host.rsplit(":", 1)[0]
+    if config.LOCAL_ONLY and name not in LOOPBACK:
+        return "Host no permitido"
+    origin = headers.get("origin", "").rstrip("/").lower()
+    if origin and origin not in config.ALLOW_ORIGINS and urlsplit(origin).netloc != host:
+        return "Origen no permitido"
+    return ""
+
+
+class LocalOnly:
+    """Middleware ASGI puro (no interfiere con el streaming de eventos)."""
+
+    def __init__(self, inner):
+        self.inner = inner
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            reason = blocked({k.decode("latin1").lower(): v.decode("latin1") for k, v in scope["headers"]})
+            if reason:
+                body = json.dumps({"detail": reason}).encode()
+                await send({"type": "http.response.start", "status": 403,
+                            "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())]})
+                await send({"type": "http.response.body", "body": body})
+                return
+        await self.inner(scope, receive, send)
+
+
+app.add_middleware(LocalOnly)
+
 
 def _bad(e: Exception) -> HTTPException:
     return HTTPException(400, str(e))
@@ -72,14 +114,43 @@ def graph():
 # ───────────────────────── Proveedores ─────────────────────────
 
 class KeyIn(BaseModel):
-    key: str = ""
+    key: str | None = None  # None: no tocarla; "": borrarla
+    vars: dict[str, str] = {}
+
+
+class EnabledIn(BaseModel):
+    enabled: bool
+
+
+def _provider(pid: str) -> dict:
+    p = config.provider(pid)
+    if not p:
+        raise HTTPException(404, "Proveedor desconocido")
+    return p
 
 
 @app.put("/api/providers/{pid}/key")
 async def set_key(pid: str, body: KeyIn):
-    if not config.provider(pid):
-        raise HTTPException(404, "Proveedor desconocido")
-    config.set_key(pid, body.key or None)
+    """Guarda (o borra) la key y los datos extra del proveedor. Nunca se devuelven por la API."""
+    p = _provider(pid)
+    if body.key is not None:
+        if body.key.strip() and not p.get("token", True):
+            raise HTTPException(400, f"{p['name']} se usa solo sin key")
+        config.set_key(pid, body.key.strip() or None)
+    for name, value in body.vars.items():
+        if name in (p.get("vars") or {}):
+            config.set_var(pid, name, value)
+    llm._models.pop(pid, None)
+    return {"ok": True}
+
+
+@app.put("/api/providers/{pid}/enabled")
+async def set_enabled(pid: str, body: EnabledIn):
+    """Activa o desactiva el uso sin key de un proveedor que lo permite."""
+    p = _provider(pid)
+    if not p.get("keyless"):
+        raise HTTPException(400, f"{p['name']} necesita una API key")
+    config.set_enabled(pid, body.enabled)
     llm._models.pop(pid, None)
     return {"ok": True}
 
@@ -87,13 +158,14 @@ async def set_key(pid: str, body: KeyIn):
 @app.get("/api/providers/{pid}/models")
 async def models(pid: str):
     try:
-        return {"models": await llm.list_models(pid)}
+        return {"models": await llm.list_models(pid), "skipped": llm.skipped(pid)}
     except llm.LLMError as e:
         return {"models": [], "error": str(e)}
 
 
 @app.post("/api/providers/{pid}/test")
 async def test_provider(pid: str):
+    """Prueba real contra el proveedor. Gasta uno o unos pocos pedidos de su cupo."""
     try:
         return await llm.test(pid)
     except llm.LLMError as e:

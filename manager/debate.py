@@ -18,7 +18,7 @@ import numpy as np
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 
-from . import db, llm, store
+from . import config, db, llm, store
 from . import embeddings as emb
 
 EARLY_STOP = 0.88  # consenso a partir del cual no hace falta otra ronda
@@ -34,7 +34,9 @@ class Run:
         self.events: list[dict] = []
         self.done = False
         self.task: asyncio.Task | None = None
-        self.pool: list[str] = []
+        self.pool: list[str] = []  # proveedores utilizables en esta discusión
+        self.bind: dict[int, tuple[str, str]] = {}  # agente → (proveedor, modelo) que le toca
+        self.used: dict[str, set[str]] = {}  # modelos ya tomados por agentes, por proveedor
         self.started: set[str] = set()
         self._wake = asyncio.Event()
         self._seq = 0
@@ -144,40 +146,62 @@ def _latest(turns: list[dict]) -> dict[int, dict]:
 
 # ───────────────────────── Llamadas a los modelos ─────────────────────────
 
-def _attempts(run: Run, agent: dict) -> list[tuple[str, str, int]]:
-    """Intento principal y respaldos: otro modelo del mismo proveedor, después otros proveedores."""
-    plan = [(agent["pid"], agent["model"], agent["slot"])]
-    if agent["model"] == "auto" and agent["slot"] != 0:
-        plan.append((agent["pid"], "auto", 0))
-    plan += [(pid, "auto", 0) for pid in run.pool if pid != agent["pid"]]
-    return plan[:3]
+def _avoid(run: Run, pid: str) -> set[str]:
+    """Donde el cupo es por modelo (modo sin key), el moderador y los respaldos usan modelos
+    distintos de los que ya tienen los agentes, para no gastarles el cupo."""
+    p = config.provider(pid) or {}
+    per_model = llm.is_anon(p) and isinstance(p.get("keyless"), dict) and p["keyless"].get("rpm_model")
+    return set(run.used.get(pid, ())) if per_model else set()
 
 
 async def _ask(run: Run, agent: dict, messages: list[dict], *, purpose: str, stage: str, rnd: int,
                problem: str = "", visible: bool = True, json_mode: bool = False, max_tokens: int = 1500) -> dict:
-    mid = f"{stage}-{rnd}-{agent['id']}"
-    turn = {"agent_id": agent["id"], "agent": agent["name"], "round": rnd, "stage": stage, "text": ""}
-    plan = _attempts(run, agent)
-    error = ""
-    for n, (pid, model, slot) in enumerate(plan):
+    """Un turno. Si el modelo del agente falla, prueba otro del mismo proveedor y después otros proveedores.
+    El que funcione queda como el modelo del agente para las rondas siguientes."""
+    aid = agent["id"]
+    mid = f"{stage}-{rnd}-{aid}"
+    turn = {"agent_id": aid, "agent": agent["name"], "round": rnd, "stage": stage, "text": ""}
+    home_pid, home_model = run.bind.get(aid, (agent["pid"], agent["model"]))
+    home = config.provider(home_pid) or {}
+    plan = [(home_pid, home_model), (home_pid, home.get("fallback_model") or "auto")]
+    plan += [(pid, "auto") for pid in run.pool if pid != home_pid]
+    failed: set[tuple[str, str]] = set()
+    error, tries = "", 0
+    for pid, model in plan:
+        if tries >= 3:
+            break
         try:
-            model = await llm.resolve(pid, model, slot)
+            if model == "auto":
+                model = await llm.pick_free(pid, _avoid(run, pid) | {m for q, m in failed if q == pid}, helper=not visible)
+            if (pid, model) in failed:
+                continue  # en ese proveedor no queda otro modelo para probar
+            tries += 1
             if visible:
-                run.emit("message_start", mid=mid, agent_id=agent["id"], agent=agent["name"], color=agent["color"],
-                         stage=stage, round=rnd, provider=pid, model=model, backup=n > 0)
+                run.emit("message_start", mid=mid, agent_id=aid, agent=agent["name"], color=agent["color"],
+                         stage=stage, round=rnd, provider=pid, model=model, backup=tries > 1)
             r = await llm.chat(
                 pid, model, messages, temperature=agent["temperature"], max_tokens=max_tokens, json_mode=json_mode,
-                purpose=purpose, slot=slot, meta={"name": agent["name"], "round": rnd, "problem": problem},
+                purpose=purpose, meta={"name": agent["name"], "round": rnd, "problem": problem},
                 on_delta=(lambda d: run.emit("message_delta", mid=mid, delta=d)) if visible else None,
                 on_reset=(lambda: run.emit("message_reset", mid=mid)) if visible else None,
+                on_think=(lambda: run.emit("message_thinking", mid=mid, agent_id=aid)) if visible else None,
+                on_wait=lambda secs, pid=pid, model=model: run.emit(
+                    "message_wait", mid=mid, agent_id=aid, agent=agent["name"], seconds=secs, provider=pid, model=model, visible=visible),
             )
+            r.text = llm.unfence(r.text)
             if visible:
                 run.emit("message_end", mid=mid, text=r.text, provider=r.provider, model=r.model, ms=r.ms)
+            if tries > 1:  # el respaldo pasa a ser su modelo; el moderador sigue eligiendo en cada llamada
+                run.bind[aid] = (pid, home_model if home_model == "auto" else model)
+                if home_model != "auto":
+                    run.used.setdefault(pid, set()).add(model)
             return {**turn, "text": r.text, "provider": r.provider, "model": r.model, "ms": r.ms}
         except llm.LLMError as e:
             error = str(e)
-            run.emit("message_error", mid=mid, agent_id=agent["id"], agent=agent["name"], stage=stage, round=rnd,
-                     error=error, retrying=n + 1 < len(plan), visible=visible)
+            failed.add((pid, model))
+            run.emit("message_error", mid=mid, agent_id=aid, agent=agent["name"], stage=stage, round=rnd,
+                     error=error, visible=visible)
+    run.emit("message_failed", mid=mid, agent_id=aid, agent=agent["name"], stage=stage, round=rnd, error=error, visible=visible)
     return {**turn, "error": error}
 
 
@@ -391,11 +415,12 @@ def accept_cards(did: int, module_id: int, ids: list[int] | None) -> list[int]:
     return out
 
 
-async def _assign(agents: list[dict], moderator: dict) -> tuple[list[str], bool]:
-    """Reparte agentes entre los proveedores disponibles para que discutan modelos distintos."""
+async def _assign(run: Run, agents: list[dict], moderator: dict) -> bool:
+    """Reparte agentes entre los proveedores disponibles para que discutan modelos distintos,
+    y deja a cada uno atado a un modelo concreto. Devuelve True si no hay ningún proveedor real."""
     real = await llm.available()
-    pool = real or ["demo"]
-    load: dict[str, int] = {p: 0 for p in pool}
+    run.pool = real or ["demo"]
+    load: dict[str, int] = {p: 0 for p in run.pool}
 
     def take(a: dict, pid: str) -> None:
         a["pid"], a["slot"] = pid, load.get(pid, 0)  # el slot elige un modelo distinto dentro del proveedor
@@ -406,17 +431,25 @@ async def _assign(agents: list[dict], moderator: dict) -> tuple[list[str], bool]
             take(a, a["provider"])
     for a in agents:  # …después los automáticos, siempre al proveedor menos usado
         if a["provider"] == "auto":
-            take(a, min(pool, key=lambda p: load[p]))
-    moderator["pid"] = moderator["provider"] if moderator["provider"] != "auto" else pool[0]
-    moderator["slot"] = 0
-    return pool, not real
+            take(a, min(run.pool, key=lambda p: load[p]))
+    moderator["pid"] = moderator["provider"] if moderator["provider"] != "auto" else run.pool[0]
+    run.bind[moderator["id"]] = (moderator["pid"], moderator["model"])  # en «auto» elige en cada llamada
+
+    for a in agents:
+        try:
+            a["model"] = await llm.resolve(a["pid"], a["model"], a["slot"])
+            run.used.setdefault(a["pid"], set()).add(a["model"])
+        except llm.LLMError:
+            pass  # se informa en su primer turno, que es donde se prueba el respaldo
+        run.bind[a["id"]] = (a["pid"], a["model"])
+    return not real
 
 
 async def _execute(run: Run, state: State) -> None:
     did, t0 = run.did, time.time()
     try:
-        run.pool, demo = await _assign(state["agents"], state["moderator"])
-        pub = lambda a: {k: a[k] for k in ("id", "name", "role", "color", "pid")}  # noqa: E731
+        demo = await _assign(run, state["agents"], state["moderator"])
+        pub = lambda a: {k: a.get(k) for k in ("id", "name", "role", "color", "pid", "model")}  # noqa: E731
         run.emit("run_started", id=did, problem=state["problem"], max_rounds=state["max_rounds"], demo=demo,
                  agents=[pub(a) for a in state["agents"]], moderator=pub(state["moderator"]))
         final = await GRAPH.ainvoke(state, {"recursion_limit": 80})

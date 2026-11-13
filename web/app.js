@@ -45,6 +45,20 @@ function toast(msg, bad) {
   setTimeout(() => t.remove(), bad ? 7000 : 3500);
 }
 const guard = fn => async (...a) => { try { return await fn(...a); } catch (e) { toast(e.message, true); } };
+
+// Confirmación dentro de la página (no usa el confirm() del navegador). Devuelve true o false.
+function confirmDialog(message, okLabel = "Aceptar") {
+  return new Promise(resolve => {
+    const dlg = $("#dialog");
+    const done = v => { dlg.onclose = null; dlg.close(); resolve(v); };
+    fill(dlg, h("div", { class: "stack" }, h("p", {}, message),
+      h("div", { class: "row" }, h("span", { class: "spacer" }),
+        h("button", { class: "btn", onclick: () => done(false) }, "Cancelar"),
+        h("button", { class: "btn danger", onclick: () => done(true) }, okLabel))));
+    dlg.onclose = () => done(false);  // Escape también cancela
+    dlg.showModal();
+  });
+}
 const pct = x => Math.round((x || 0) * 100) + "%";
 const when = ts => new Date(ts * 1000).toLocaleString("es", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const short = (s, n = 90) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
@@ -85,7 +99,7 @@ async function refresh() {
   fill($("#foot"), 
     h("div", {}, h("span", { class: "dot " + (e.state === "listo" ? "ok" : e.state === "error" ? "bad" : "live") }),
       e.state === "listo" ? ["embeddings ", h("b", {}, name)] : e.state === "error" ? "error en embeddings" : "cargando modelo local…"),
-    h("div", {}, h("span", { class: "dot " + (real.length ? "ok" : "warn") }), real.length ? [h("b", {}, real.length), " proveedor" + (real.length > 1 ? "es" : "") + " LLM"] : "modo demo, sin keys"),
+    h("div", {}, h("span", { class: "dot " + (real.length ? "ok" : "warn") }), real.length ? [h("b", {}, real.length), " proveedor" + (real.length > 1 ? "es" : "") + " LLM"] : "modo demo"),
     h("div", {}, h("b", {}, S.st.stats.cards), " tarjetas · ", h("b", {}, S.st.stats.docs), " notas"),
   );
   if (e.state === "cargando") setTimeout(guard(refresh), 3000);
@@ -177,8 +191,8 @@ function buildDiscusion() {
 async function showDiscusion() {
   const st = await refresh();
   fill($("#demo-notice"), st.demo ? h("div", { class: "notice" },
-    h("span", {}, "Modo demo: todavía no hay ninguna API key cargada, así que las respuestas de los agentes son simuladas."),
-    h("button", { class: "btn small", onclick: () => go("agentes") }, "Cargar una key gratuita")) : "");
+    h("span", {}, "Modo demo: todavía no hay ningún proveedor activo, así que las respuestas de los agentes son simuladas. Hay opciones que funcionan sin registrarte."),
+    h("button", { class: "btn small primary", onclick: () => go("agentes") }, "Activar un proveedor")) : "");
   const picked = new Set($$("#chips .chip.on").map(c => +c.dataset.id));
   const first = !$("#chips").children.length;
   fill($("#chips"), st.agents.filter(a => !a.is_moderator).map(a =>
@@ -195,10 +209,16 @@ async function loadHistory() {
   $("#history").hidden = false;
   fill($("#history"), 
     h("div", { class: "label", style: "margin:22px 0 10px" }, "Discusiones anteriores"),
-    list.length ? h("div", { class: "stack" }, list.map(d => h("button", { class: "list-item", onclick: () => openRun(d.id) },
+    list.length ? h("div", { class: "stack" }, list.map(d => h("div", { class: "list-item", role: "button", tabindex: 0,
+      onclick: () => openRun(d.id), onkeydown: e => { if (e.key === "Enter") openRun(d.id); } },
       h("span", { class: "dot " + (d.status === "terminada" ? "ok" : d.status === "en curso" ? "live" : "bad") }),
       h("span", { class: "t" }, d.problem), d.consensus != null ? h("span", { class: "tag" }, "consenso " + pct(d.consensus)) : "",
-      h("span", { class: "tag" }, d.status), h("span", { class: "mono muted" }, when(d.created_at)))))
+      h("span", { class: "tag" }, d.status), h("span", { class: "mono muted" }, when(d.created_at)),
+      d.status === "en curso" ? "" : h("button", { class: "btn small danger", onclick: guard(async e => {
+        e.stopPropagation();
+        if (!await confirmDialog("¿Borrar esta discusión del historial? Las tarjetas que ya guardaste en módulos no se tocan.", "Borrar")) return;
+        await api(`/discussions/${d.id}`, { method: "DELETE" }); loadHistory();
+      }) }, "Borrar"))))
       : h("div", { class: "empty" }, "Todavía no hay discusiones. Escribí un problema arriba y poné a los agentes a debatir."));
 }
 
@@ -247,7 +267,8 @@ function log(ev, text, cls) {
 function status(text, cls) { const s = $("#run-status"); s.textContent = text; s.className = "tag " + (cls || ""); }
 
 function lane(a) {
-  const st = h("span", { class: "tag" }, "esperando"), model = h("div", { class: "lane-model" }, provName(a.pid));
+  const st = h("span", { class: "tag" }, "esperando");
+  const model = h("div", { class: "lane-model" }, provName(a.pid) + (a.model && a.model !== "auto" ? " · " + a.model : ""));
   const body = h("div", { class: "lane-body" });
   const el = h("div", { class: "lane", style: `--c:${a.color}` },
     h("div", { class: "lane-head", title: a.role }, h("div", { class: "row" }, h("strong", {}, a.name), h("span", { class: "spacer" }), st), model), body);
@@ -344,14 +365,27 @@ const ON = {
     const who = m.lane ? R.agents.find(a => R.lanes.get(a.id) === m.lane).name : "El moderador";
     log(ev, `${who} terminó en ${secs}`);
   },
-  message_error(ev) {
-    log(ev, `${ev.agent}: ${ev.error}` + (ev.retrying ? " → pruebo con un respaldo" : ""), "err");
+  message_thinking(ev) {
     const L = R.lanes.get(ev.agent_id);
-    if (!ev.visible || !L) return;
-    L.el.classList.remove("speaking");
-    if (!ev.retrying) { L.st.textContent = "sin respuesta"; L.st.className = "tag bad"; }
-    const m = R.msgs.get(ev.mid);
-    if (m) { m.body.className = "md"; m.wrap.append(h("div", { class: "msg-err" }, ev.error)); }
+    if (L) { L.st.textContent = "razonando…"; L.st.className = "tag ok"; }
+    else if (R.msgs.has(ev.mid)) $("#synth-meta").textContent += " · razonando…";
+  },
+  message_wait(ev) {
+    log(ev, `${ev.agent} espera cupo de ${provName(ev.provider)} (${ev.model}): unos ${ev.seconds} s`);
+    const L = R.lanes.get(ev.agent_id);
+    if (ev.visible && L) { L.st.textContent = `esperando cupo ~${ev.seconds} s`; L.st.className = "tag warn"; }
+  },
+  message_error(ev) {
+    log(ev, `${ev.agent}: ${ev.error}`, "err");
+    const L = R.lanes.get(ev.agent_id), m = R.msgs.get(ev.mid);
+    if (!ev.visible || !m) return;
+    if (L) L.el.classList.remove("speaking");
+    m.body.className = "md"; m.wrap.append(h("div", { class: "msg-err" }, ev.error));
+  },
+  message_failed(ev) {
+    log(ev, `${ev.agent} se quedó sin respuesta en este paso`, "err");
+    const L = R.lanes.get(ev.agent_id);
+    if (ev.visible && L) { L.st.textContent = "sin respuesta"; L.st.className = "tag bad"; L.el.classList.remove("speaking"); }
   },
   evaluation(ev) {
     R.evals.push(ev);
@@ -391,8 +425,15 @@ const ON = {
 async function endRun() {
   $("#stop").hidden = true; $("#start").disabled = false;
   if (!R) return;
-  if ($("#run-status").textContent === "cargando") status("interrumpida", "bad");
   const d = await api(`/discussions/${R.id}`);
+  if (R.live || $("#run-status").textContent === "cargando") {
+    // Los eventos se acabaron sin un cierre: el servidor se detuvo en medio de la discusión.
+    R.live = false;
+    status(d.status === "en curso" ? "interrumpida" : d.status, "bad");
+    $$(".node.active").forEach(g => g.setAttribute("class", "node error"));
+    $$(".md.streaming").forEach(e => (e.className = "md"));
+    $$(".lane.speaking").forEach(e => e.classList.remove("speaking"));
+  }
   const done = new Map(d.proposals.map(p => [p.id, p.card_id]));
   R.cards.forEach(c => (c.saved = !!done.get(c.id)));
   renderCards();
@@ -435,12 +476,12 @@ function buildConsultar() {
 }
 async function showConsultar() {
   const st = await refresh(), on = new Set($$("#ask-filters .chip.on").map(c => +c.dataset.id));
-  const ollama = st.providers.find(p => p.id === "ollama");
-  fill($("#ask-filters"), 
+  const local = st.providers.find(p => p.local && p.ready);
+  fill($("#ask-filters"),
     st.modules.length ? h("span", { class: "muted" }, "Buscar en") : "",
     st.modules.map(m => h("button", { class: "chip" + (on.has(m.id) ? " on" : ""), "data-id": m.id, onclick: e => e.currentTarget.classList.toggle("on") }, h("i"), `${m.name} (${m.cards})`)),
     st.modules.length ? h("span", { class: "muted mono" }, "sin marcar = todos") : "",
-    ollama && ollama.ready ? h("label", { class: "switch" }, h("input", { type: "checkbox", id: "ask-local" }), "redactar con el modelo local (Ollama)") : "");
+    local ? h("label", { class: "switch" }, h("input", { type: "checkbox", id: "ask-local" }), `redactar con el modelo local (${local.name})`) : "");
   if (!st.modules.length) fill($("#ask-out"), h("div", { class: "empty", style: "margin-top:16px" }, "Todavía no hay módulos. Se crean guardando las tarjetas de una discusión, o a mano en Módulos."));
   $("#ask-q").focus();
 }
@@ -501,7 +542,7 @@ async function showModulos() {
       h("button", { class: "btn small primary", onclick: () => cardDialog(m.id) }, "＋ Tarjeta"),
       h("a", { class: "btn small", href: `/api/modules/${m.id}/export.html`, title: "Una página que se abre con doble clic y busca sin servidor ni IA" }, "Exportar página autónoma"),
       h("a", { class: "btn small", href: `/api/modules/${m.id}/export.json` }, "Exportar .json"),
-      h("button", { class: "btn small danger", onclick: guard(async () => { if (!confirm(`¿Borrar el módulo «${m.name}» y sus ${cards.length} tarjetas?`)) return; await api(`/modules/${m.id}`, { method: "DELETE" }); S.module = null; showModulos(); }) }, "Borrar")),
+      h("button", { class: "btn small danger", onclick: guard(async () => { if (!await confirmDialog(`¿Borrar el módulo «${m.name}» y sus ${cards.length} tarjetas? No se puede deshacer.`, "Borrar módulo")) return; await api(`/modules/${m.id}`, { method: "DELETE" }); S.module = null; showModulos(); }) }, "Borrar")),
     h("div", { style: "margin-top:14px" }, cards.length ? cards.map(c => h("div", { class: "kcard" }, h("span"),
       h("div", { class: "q" }, c.question), h("div", { class: "a" }, c.answer),
       h("div", { class: "meta" }, h("span", { class: "tag" }, c.kind), c.tags.map(t => h("span", { class: "tag" }, "#" + t)), c.source ? h("span", { class: "tag" }, c.source) : "",
@@ -567,12 +608,21 @@ async function showMemoria() {
 }
 
 // ───────────────────────── Agentes y proveedores ─────────────────────────
+const GROUPS = [
+  ["sin-cuenta", "Sin registrarte", "Se activan con un clic: no piden cuenta ni key. A cambio tienen límites bajos, y tus prompts llegan a ese servicio."],
+  ["email", "Con una cuenta gratuita", "Te registrás con un email, sin tarjeta, y pegás la key acá."],
+  ["telefono", "Con cuenta y teléfono verificado", ""],
+  ["local", "En tu máquina", "Sin key, sin cuotas y sin que nada salga de tu computadora. Se detectan solos cuando están abiertos."],
+  ["demo", "Demostración", ""],
+];
+
 function buildAgentes() {
-  fill(view("agentes"), 
-    h("div", { class: "head" }, h("h1", {}, "Agentes"), h("p", {}, "Cada agente tiene un rol y puede correr en un proveedor distinto. En «automático» se reparten entre los que tengas configurados.")),
+  fill(view("agentes"),
+    h("div", { class: "head" }, h("h1", {}, "Agentes"), h("p", {}, "Cada agente tiene un rol y puede correr en un proveedor distinto. En «automático» se reparten entre los que tengas activos.")),
     h("div", { class: "cards", id: "agents" }),
-    h("div", { class: "head", style: "margin-top:30px" }, h("h1", {}, "Proveedores de LLM"), h("p", {}, "Las keys se guardan solo en tu máquina (data/keys.json).")),
-    h("div", { class: "cards", id: "providers" }));
+    h("div", { class: "head", style: "margin-top:34px" }, h("h1", {}, "Proveedores de LLM"),
+      h("p", {}, "Las keys se guardan solo en tu máquina (data/keys.json). Los planes gratuitos cambian seguido: «Probar» te dice qué responde hoy.")),
+    h("div", { id: "providers" }));
 }
 
 async function modelOptions(sel, pid, current) {
@@ -585,11 +635,13 @@ async function modelOptions(sel, pid, current) {
   sel.value = current || "auto";
 }
 
+const notReady = p => (p.ready ? "" : p.local ? " (no detectado)" : p.keyless ? " (desactivado)" : " (sin key)");
+
 function agentCard(a, providers) {
   const isNew = !a.id;
   const name = h("input", { type: "text", value: a.name, placeholder: "Nombre" }), color = h("input", { type: "color", value: a.color });
   const role = h("textarea", { rows: 4, placeholder: "Rol: cómo piensa y qué prioriza este agente" }, a.role);
-  const prov = h("select", {}, h("option", { value: "auto" }, "automático"), providers.map(p => h("option", { value: p.id }, p.name + (p.ready ? "" : " (sin configurar)"))));
+  const prov = h("select", {}, h("option", { value: "auto" }, "automático"), providers.map(p => h("option", { value: p.id }, p.name + notReady(p))));
   prov.value = a.provider;
   const model = h("select", { style: "min-width:0;width:100%" });
   modelOptions(model, a.provider, a.model);
@@ -604,7 +656,10 @@ function agentCard(a, providers) {
     h("div", { class: "row" },
       a.is_moderator ? h("span", { class: "muted", style: "font-size:12.5px" }, "Evalúa, sintetiza y destila") : h("label", { class: "switch" }, on, "participa por defecto"),
       h("span", { class: "spacer" }),
-      !isNew && !a.is_moderator ? h("button", { class: "btn small danger", onclick: guard(async () => { if (!confirm(`¿Borrar al agente «${a.name}»?`)) return; await api(`/agents/${a.id}`, { method: "DELETE" }); showAgentes(); }) }, "Borrar") : "",
+      !isNew && !a.is_moderator ? h("button", { class: "btn small danger", onclick: guard(async () => {
+        if (!await confirmDialog(`¿Borrar al agente «${a.name}»?`, "Borrar agente")) return;
+        await api(`/agents/${a.id}`, { method: "DELETE" }); showAgentes();
+      }) }, "Borrar") : "",
       h("button", { class: "btn small primary", onclick: guard(async () => {
         const body = { name: name.value, role: role.value, provider: prov.value, model: model.value, color: color.value, temperature: +temp.value, enabled: a.is_moderator ? true : on.checked };
         if (isNew) await api("/agents", { body }); else await api(`/agents/${a.id}`, { method: "PUT", body });
@@ -617,22 +672,54 @@ function agentCard(a, providers) {
 function providerCard(p) {
   const res = h("div", { class: "res" });
   const test = h("button", { class: "btn small", onclick: guard(async () => {
-    res.textContent = "probando…";
+    res.style.color = ""; res.textContent = "probando…";
     const r = await api(`/providers/${p.id}/test`, { method: "POST" });
-    res.textContent = r.ok ? `✓ respondió ${r.model} en ${r.ms} ms · ${r.models.length} modelos disponibles` : "✕ " + r.error;
+    const skipped = (r.skipped || []).length ? ` · salteó ${r.skipped.map(s => s.model).join(", ")}` : "";
+    res.textContent = r.ok ? `✓ respondió ${r.model} en ${(r.ms / 1000).toFixed(1)} s${skipped} · ${r.models.length} modelos en lista` : `✕ ${r.error}${skipped}`;
     res.style.color = r.ok ? "var(--accent)" : "var(--bad)";
   }) }, "Probar");
-  const state = p.demo ? ["siempre disponible", "ok"] : p.ready ? [p.local ? "detectado" : "key cargada " + p.key_hint, "ok"] : [p.local ? "no detectado" : "falta la key", "warn"];
-  const kids = [h("div", { class: "row" }, h("h3", {}, p.name), h("span", { class: "spacer" }), h("span", { class: "tag " + state[1] }, state[0])), h("p", { class: "note" }, p.note)];
+  const link = (text) => p.signup ? h("a", { class: "btn small", href: p.signup, target: "_blank", rel: "noopener" }, text) : "";
+  const missing = p.vars.filter(v => !v.set).map(v => v.label.toLowerCase());
+  const state = p.demo ? ["siempre disponible", "ok"]
+    : p.local ? (p.ready ? ["detectado", "ok"] : ["no detectado", ""])
+    : p.anon ? ["activo sin key", "ok"]
+    : p.ready ? ["key cargada " + p.key_hint, "ok"]
+    : p.key_hint && missing.length ? ["falta " + missing.join(", "), "warn"]
+    : p.keyless ? ["desactivado", ""] : ["sin key", ""];
+  const kids = [
+    h("div", { class: "row", style: "flex-wrap:nowrap" }, h("h3", {}, p.name), h("span", { class: "spacer" }), h("span", { class: "tag " + state[1] }, state[0])),
+    p.free ? h("div", { class: "free" }, p.free) : "",
+    h("p", { class: "note" }, p.note)];
+
+  const setEnabled = on => guard(async () => {
+    await api(`/providers/${p.id}/enabled`, { method: "PUT", body: { enabled: on } });
+    toast(on ? `${p.name} activado` : `${p.name} desactivado`); showAgentes();
+  });
+  const keyForm = () => {
+    const key = h("input", { type: "password", placeholder: p.key_hint ? "Reemplazar la key…" : "Pegá tu API key", autocomplete: "off" });
+    const extra = p.vars.map(v => h("input", { type: "text", "data-var": v.name, placeholder: v.label + (v.set ? " (cargado)" : ""), autocomplete: "off" }));
+    const save = guard(async () => {
+      const vars = Object.fromEntries(extra.filter(i => i.value.trim()).map(i => [i.dataset.var, i.value.trim()]));
+      if (!key.value.trim() && !Object.keys(vars).length) return toast("Pegá la key antes de guardar", true);
+      await api(`/providers/${p.id}/key`, { method: "PUT", body: { key: key.value.trim() || null, vars } });
+      toast("Guardado"); showAgentes();
+    });
+    const remove = guard(async () => {
+      await api(`/providers/${p.id}/key`, { method: "PUT", body: { key: "", vars: Object.fromEntries(p.vars.map(v => [v.name, ""])) } });
+      toast("Key borrada"); showAgentes();
+    });
+    return [extra, h("div", { class: "row", style: "flex-wrap:nowrap" }, key, h("button", { class: "btn small primary", onclick: save }, "Guardar")),
+      h("div", { class: "row" }, link("Conseguir key gratis"), h("span", { class: "spacer" }),
+        p.key_hint ? h("button", { class: "btn small danger", onclick: remove }, "Quitar") : "", p.ready && !p.anon ? test : "")];
+  };
+
   if (p.demo) kids.push(h("div", { class: "row" }, test));
-  else if (p.local) kids.push(h("div", { class: "row" }, h("a", { class: "btn small", href: p.signup, target: "_blank", rel: "noopener" }, "Descargar Ollama"), h("span", { class: "spacer" }), test));
-  else {
-    const key = h("input", { type: "password", placeholder: p.ready ? "Reemplazar la key…" : "Pegá tu API key", autocomplete: "off" });
-    const save = guard(async () => { await api(`/providers/${p.id}/key`, { method: "PUT", body: { key: key.value.trim() } }); toast(key.value.trim() ? "Key guardada" : "Key borrada"); showAgentes(); });
-    kids.push(h("div", { class: "row", style: "flex-wrap:nowrap" }, key, h("button", { class: "btn small primary", onclick: save }, "Guardar")),
-      h("div", { class: "row", style: "margin-top:8px" }, h("a", { class: "btn small", href: p.signup, target: "_blank", rel: "noopener" }, "Conseguir key gratis"), h("span", { class: "spacer" }),
-        p.ready ? h("button", { class: "btn small danger", onclick: () => { key.value = ""; save(); } }, "Quitar") : "", p.ready ? test : ""));
-  }
+  else if (p.local) kids.push(h("div", { class: "row" }, link("Descargar"), h("span", { class: "spacer" }), p.ready ? test : ""));
+  else if (p.keyless) {
+    if (p.anon) kids.push(h("div", { class: "row" }, h("button", { class: "btn small", onclick: setEnabled(false) }, "Desactivar"), h("span", { class: "spacer" }), test));
+    else if (!p.ready) kids.push(h("div", { class: "row" }, h("button", { class: "btn small primary", onclick: setEnabled(true) }, "Activar sin key")));
+    if (p.token) kids.push(h("details", { open: !!p.key_hint }, h("summary", {}, p.key_hint ? "Token propio cargado" : "Tengo un token propio (sube el límite)"), h("div", { class: "stack", style: "margin-top:8px" }, keyForm())));
+  } else kids.push(h("div", { class: "stack" }, keyForm()));
   kids.push(res);
   return h("div", { class: "panel prov", style: "margin:0" }, kids);
 }
@@ -641,7 +728,11 @@ async function showAgentes() {
   const st = await refresh();
   const blank = { name: "", role: "", provider: "auto", model: "auto", color: "#7aa2f7", temperature: 0.7, enabled: 1 };
   fill($("#agents"), st.agents.map(a => agentCard(a, st.providers)), agentCard(blank, st.providers));
-  fill($("#providers"), st.providers.map(providerCard));
+  fill($("#providers"), GROUPS.map(([id, title, hint]) => {
+    const list = st.providers.filter(p => p.group === id);
+    return list.length ? [h("div", { class: "group-head" }, h("h2", {}, title), hint ? h("p", { class: "muted" }, hint) : ""),
+      h("div", { class: "cards" }, list.map(providerCard))] : "";
+  }));
 }
 
 // ───────────────────────── Inicio ─────────────────────────

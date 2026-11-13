@@ -186,6 +186,10 @@ a.btn.small { padding: 4px 9px; font-size: 12.5px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 .prov h3, .agent h3 { font-size: 14.5px; }
 .prov .note { color: var(--muted); font-size: 12.5px; margin: 6px 0 10px; min-height: 2.9em; }
+.prov .free { font: 11.5px/1.4 var(--mono); color: var(--accent); margin-top: 6px; }
+.prov details summary { cursor: pointer; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+.group-head { margin: 26px 0 10px; }
+.group-head p { font-size: 13px; margin-top: 2px; }
 .prov .res { font: 11.5px var(--mono); margin-top: 8px; color: var(--muted); overflow-wrap: anywhere; }
 .agent { border-top: 3px solid var(--c); }
 .agent input[type=color] { width: 30px; height: 30px; padding: 0; border: 0; background: none; cursor: pointer; flex: none; }

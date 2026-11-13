@@ -69,3 +69,46 @@ def set_key(pid: str, key: str | None) -> None:
     else:
         keys.pop(pid, None)
     KEYS_PATH.write_text(json.dumps(keys, indent=2), "utf-8")
+
+
+# Algunos proveedores funcionan sin registrarse. No se usan hasta que el usuario los activa:
+# activar uno guarda este marcador en el lugar de la key.
+ANON = "@sin-key"
+
+
+def set_enabled(pid: str, on: bool) -> None:
+    set_key(pid, ANON if on else None)
+
+
+# Algunos proveedores necesitan un dato más en la URL (Cloudflare: el ID de cuenta).
+def get_var(pid: str, name: str) -> str:
+    v = _keys().get(f"{pid}:{name}")
+    if v:
+        return v
+    spec = ((provider(pid) or {}).get("vars") or {}).get(name) or {}
+    return os.environ.get(spec.get("env", ""), "") if spec.get("env") else ""
+
+
+def set_var(pid: str, name: str, value: str | None) -> None:
+    keys = _keys()
+    if value and value.strip():
+        keys[f"{pid}:{name}"] = value.strip()
+    else:
+        keys.pop(f"{pid}:{name}", None)
+    KEYS_PATH.write_text(json.dumps(keys, indent=2), "utf-8")
+
+
+def missing_vars(p: dict) -> list[str]:
+    return [spec.get("label", name) for name, spec in (p.get("vars") or {}).items() if not get_var(p["id"], name)]
+
+
+def base_url(p: dict) -> str:
+    url = p.get("base_url", "")
+    for name in p.get("vars") or {}:
+        url = url.replace("{" + name + "}", get_var(p["id"], name))
+    return url
+
+
+# Sin login, el servidor solo debe atender a esta máquina. Se relaja al arrancar con --host distinto.
+LOCAL_ONLY = os.environ.get("MANAGER_LOCAL_ONLY", "1") != "0"
+ALLOW_ORIGINS = {o.strip().rstrip("/") for o in os.environ.get("MANAGER_ALLOW_ORIGINS", "").split(",") if o.strip()}

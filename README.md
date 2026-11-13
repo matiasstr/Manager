@@ -28,21 +28,25 @@ Sin ninguna API key arranca en **modo demo**: los agentes dan respuestas simulad
 
 ## Proveedores
 
-Todos se usan por su API compatible con OpenAI, así que agregar otro es sumar una entrada en [`proveedores.json`](proveedores.json).
+Todos se usan por su API compatible con OpenAI, así que agregar otro es sumar una entrada en [`proveedores.json`](proveedores.json). El catálogo sale del directorio [itsfree.ai](https://itsfree.ai/) y de pruebas propias del 13 de noviembre de 2026.
 
-| Proveedor | Dónde sacar la key | Nota |
-|---|---|---|
-| Groq | console.groq.com/keys | Muy rápido |
-| Google Gemini | aistudio.google.com/apikey | Modelos Flash gratis; en el plan gratuito Google puede usar los prompts |
-| OpenRouter | openrouter.ai/keys | Una key, muchos modelos `:free` |
-| Cerebras | cloud.cerebras.ai | Revisá si tu cuenta tiene plan gratuito |
-| Mistral | console.mistral.ai | Revisá las condiciones actuales |
-| NVIDIA NIM | build.nvidia.com | Catálogo grande de modelos abiertos |
-| Ollama | ollama.com/download | Local: sin key, sin cuotas, nada sale de tu máquina |
+| Qué pide | Proveedores |
+|---|---|
+| **Nada: se activan con un clic** | OVHcloud AI Endpoints (2 pedidos por minuto por modelo), LLM7.io (10 por minuto) |
+| Email, sin tarjeta | Groq, Google AI Studio (Gemini), OpenRouter, Mistral, Cohere, Requesty, OpenCode Zen, Vercel AI Gateway, Ollama Cloud, Cloudflare Workers AI, Z.ai, AMD Radeon Cloud, SambaNova |
+| Teléfono verificado | NVIDIA NIM |
+| Nada, corren en tu máquina | Ollama, LM Studio, llama.cpp, Jan |
 
-Los modelos gratuitos cambian todo el tiempo, por eso **no hay ningún nombre de modelo fijo en el código**: Manager le pide a cada proveedor su lista real y elige según las preferencias de `proveedores.json`. Con una sola key igual discuten modelos distintos, porque reparte un modelo diferente a cada agente. Si un modelo devuelve un límite de uso, reintenta y después pasa a un respaldo.
+Para empezar sin registrarte en nada: **Agentes → Proveedores → OVHcloud → Activar sin key**. Discuten gpt-oss, Llama 3.3 y Mistral, y una discusión de prueba tardó 75 segundos. Tené en cuenta que con cualquier proveedor en la nube tus prompts llegan a ese servicio; para algo confidencial usá uno local.
 
-Los límites y condiciones de los planes gratuitos los define cada proveedor y cambian seguido; verificalos en su sitio.
+Los planes gratuitos cambian todas las semanas, por eso **no hay ningún nombre de modelo fijo en el código**:
+
+- Manager le pide a cada proveedor su lista real y descarta lo que no conversa (audio, imagen, embeddings, clasificadores).
+- Reparte un modelo de **familia distinta** a cada agente, así debaten LLM diferentes aun con una sola key.
+- Si un modelo no existe, no está incluido en tu plan o se quedó sin cupo, lo **saca de rotación un rato**, el agente pasa a otro y sigue.
+- Respeta los cupos por minuto esperando en vez de fallar, y la interfaz muestra la espera.
+
+No están en el catálogo los que piden tarjeta (Cerebras, Nebius), los que solo dan un crédito inicial (DeepSeek, Nscale, AI21) y los que exigen un teléfono de China (ModelScope, SiliconFlow).
 
 ## Cómo funciona una discusión
 
@@ -120,6 +124,21 @@ proveedores.json  catálogo de proveedores
 data/             tu base y tus keys (no se sube a git)
 ```
 
-## Estado de las pruebas
+## Seguridad
 
-Probado de punta a punta en modo demo, y el camino de llamadas reales (streaming, reintento tras 429, respaldo en otro proveedor, modelos inexistentes, keys inválidas) contra un servidor falso compatible con OpenAI. **No está probado contra las APIs reales de cada proveedor**, porque requiere keys: usá el botón **Probar** de cada proveedor al cargar la tuya.
+Manager no tiene login: está pensado para correr en tu máquina. Por eso solo escucha en `127.0.0.1` y rechaza los pedidos que vengan de otra página web o con otro nombre de host, para que un sitio que visites no pueda abrir discusiones ni pisar tus keys. Si lo arrancás con `--host 0.0.0.0`, cualquiera en tu red puede usarlo.
+
+## Pruebas
+
+```bash
+python tests/prueba_motor.py
+python tests/prueba_proveedores.py
+```
+
+La primera recorre memoria, módulos, consulta sin LLM, exportación y una discusión completa en modo demo. La segunda ejercita las llamadas reales (streaming, reintentos, respaldos, modelos caídos, acceso sin key, cupos) contra un servidor falso, sin internet.
+
+Qué está verificado contra servicios reales, al 13 de noviembre de 2026:
+
+- **OVHcloud sin key:** una discusión completa de punta a punta.
+- **Los demás proveedores en la nube:** que la URL existe y rechaza una key inválida como se espera. **Ninguno está probado con una key real**; usá el botón **Probar** al cargar la tuya.
+- **Los locales** (Ollama, LM Studio, llama.cpp, Jan): sin probar, no estaban instalados.

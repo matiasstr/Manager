@@ -1,74 +1,246 @@
 [
   {
+    "id": "ovh",
+    "name": "OVHcloud AI Endpoints",
+    "group": "sin-cuenta",
+    "base_url": "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1",
+    "keyless": { "rpm_model": 2 },
+    "token": false,
+    "free": "2 pedidos por minuto por modelo, sin registrarte",
+    "signup": "https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/",
+    "rotate": 8,
+    "max_tokens": 3000,
+    "json_mode": false,
+    "helper": "gpt-oss-20b|Mistral-Small",
+    "prefer": ["gpt-oss-120b", "Llama-3_3-70B", "Mistral-Small", "gpt-oss-20b", "Qwen3\\.6", "Qwen3\\.8", "Qwen3\\.5-397B", "Qwen3\\.5-9B"],
+    "note": "Modelos abiertos alojados en Francia: gpt-oss, Llama 3.3, Qwen y Mistral. OVHcloud declara que no usa los prompts para entrenar. Con un token propio los modelos de chat se cobran, por eso acá solo se usa sin key."
+  },
+  {
+    "id": "llm7",
+    "name": "LLM7.io",
+    "group": "sin-cuenta",
+    "base_url": "https://api.llm7.io/v1",
+    "env": "LLM7_API_KEY",
+    "keyless": { "key": "unused", "rpm": 10, "models": ["mistral-Nemo-Instruct-2407", "gpt-oss", "gemma4:31b", "minimax-m2.7"] },
+    "free": "10 pedidos por minuto sin cuenta; 40 con un token gratuito",
+    "signup": "https://token.llm7.io",
+    "only": "^(gpt-oss|gemma|minimax|mistral|deepseek|glm|kimi|llama|mimo|inkling)",
+    "prefer": ["gpt-oss", "gemma4", "minimax", "mistral-Small", "deepseek", "glm", "kimi", "llama", "mistral-Nemo"],
+    "note": "Pasarela independiente. Sin cuenta ofrece pocos modelos y cambian seguido (al 13 nov 2026 solo respondía Mistral Nemo); un token gratuito abre más. No publica qué hace con los prompts: no mandes nada confidencial."
+  },
+  {
     "id": "groq",
     "name": "Groq",
+    "group": "email",
     "base_url": "https://api.groq.com/openai/v1",
     "env": "GROQ_API_KEY",
+    "free": "30 pedidos por minuto y 1.000 por día por modelo",
     "signup": "https://console.groq.com/keys",
-    "prefer": ["llama-3.3-70b", "gpt-oss-120b", "qwen", "llama", "gpt-oss"],
-    "note": "Muy rápido. Plan gratuito con límite por minuto y por día."
+    "prefer": ["gpt-oss-120b", "qwen3\\.8", "qwen", "kimi", "llama-4", "llama", "gpt-oss"],
+    "note": "El más rápido. Hoy sus modelos gratuitos son gpt-oss y Qwen."
   },
   {
     "id": "gemini",
-    "name": "Google Gemini",
+    "name": "Google AI Studio (Gemini)",
+    "group": "email",
     "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
     "env": "GEMINI_API_KEY",
-    "signup": "https://aistudio.google.com/apikey",
+    "free": "15 pedidos por minuto y 1.500 por día",
+    "signup": "https://aistudio.google.com/app/apikey",
     "only": "^gemini|^gemma",
+    "max_tokens": 4000,
     "prefer": ["flash-latest", "flash(?!-lite)", "flash-lite", "gemma"],
-    "note": "Gratis para los modelos Flash. En el plan gratuito Google puede usar los prompts para mejorar sus productos."
+    "note": "Modelos Gemini Flash. En el plan gratuito Google puede usar los prompts y las respuestas para mejorar sus modelos: no mandes nada confidencial."
   },
   {
     "id": "openrouter",
     "name": "OpenRouter",
+    "group": "email",
     "base_url": "https://openrouter.ai/api/v1",
     "env": "OPENROUTER_API_KEY",
-    "signup": "https://openrouter.ai/keys",
-    "only": ":free$|^openrouter/free$",
-    "prefer": ["^openrouter/free$", "gpt-oss-120b", "nemotron", "llama", "qwen"],
-    "default_model": "openrouter/free",
-    "note": "Una sola key para muchos modelos gratuitos (los que terminan en :free). La lista cambia seguido."
-  },
-  {
-    "id": "cerebras",
-    "name": "Cerebras",
-    "base_url": "https://api.cerebras.ai/v1",
-    "env": "CEREBRAS_API_KEY",
-    "signup": "https://cloud.cerebras.ai",
-    "prefer": ["gpt-oss-120b", "llama-3.3-70b", "qwen", "llama"],
-    "note": "Inferencia muy rápida. Revisá si tu cuenta todavía tiene plan gratuito."
+    "free": "20 pedidos por minuto y 50 por día en los modelos :free",
+    "signup": "https://openrouter.ai/workspaces/default/keys",
+    "only": ":free$",
+    "fallback_model": "openrouter/free",
+    "prefer": ["gpt-oss-120b", "nemotron-3-ultra", "glm-5", "minimax-m3", "gemma-4-31b", "deepseek", "kimi", "qwen", "llama", "ernie", "nemotron-3\\.5-super", "inkling", "gemma", "nemotron"],
+    "note": "Una sola key para muchos modelos gratuitos (los que terminan en :free). La lista cambia casi todas las semanas."
   },
   {
     "id": "mistral",
-    "name": "Mistral",
+    "name": "Mistral AI",
+    "group": "email",
     "base_url": "https://api.mistral.ai/v1",
     "env": "MISTRAL_API_KEY",
+    "free": "Modo gratuito en los modelos small y labs",
     "signup": "https://console.mistral.ai/api-keys",
-    "prefer": ["mistral-small-latest", "mistral-medium-latest", "open-mistral", "mistral-small"],
-    "note": "Plan Experiment gratuito; revisá las condiciones actuales en su consola."
+    "prefer": ["mistral-small-latest", "magistral-small-latest", "open-mistral-nemo", "labs-", "mistral-small", "pixtral-12b", "ministral"],
+    "note": "Gratis sin tarjeta en los modelos small y labs. Los medium y large son pagos."
+  },
+  {
+    "id": "cohere",
+    "name": "Cohere",
+    "group": "email",
+    "base_url": "https://api.cohere.com/compatibility/v1",
+    "env": "COHERE_API_KEY",
+    "free": "20 pedidos por minuto y 1.000 por mes",
+    "signup": "https://dashboard.cohere.com/api-keys",
+    "only": "^command",
+    "models": ["command-a-plus-05-2026", "command-a-03-2025", "command-r-plus-08-2024", "command-r-08-2024"],
+    "prefer": ["command-a-plus", "command-a-03", "command-a-reasoning", "command-r-plus", "command-r-08", "command-r7b"],
+    "note": "Familia Command. La key gratuita es de prueba: sirve para prototipos, no para producción."
+  },
+  {
+    "id": "requesty",
+    "name": "Requesty",
+    "group": "email",
+    "base_url": "https://router.requesty.ai/v1",
+    "env": "REQUESTY_API_KEY",
+    "free": "20 pedidos por minuto y 200 por día en los modelos de costo cero",
+    "signup": "https://app.requesty.ai/api-keys",
+    "only": "gemma-4-31b|nemotron-3-(ultra|super|nano)|nemotron-3\\.5-lightning|muse-glimmer|ling-3\\.0",
+    "prefer": ["nemotron-3-ultra", "gemma-4-31b", "nemotron-3-super", "muse-glimmer", "nemotron-3\\.5-lightning"],
+    "note": "Pasarela con algunos modelos de costo cero (Nemotron, Gemma 4). El resto de su catálogo es pago."
+  },
+  {
+    "id": "opencode",
+    "name": "OpenCode Zen",
+    "group": "email",
+    "base_url": "https://opencode.ai/zen/v1",
+    "env": "OPENCODE_API_KEY",
+    "free": "6 modelos gratuitos",
+    "signup": "https://opencode.ai/auth",
+    "only": "-free$|^big-pickle$",
+    "prefer": ["nemotron-3-ultra", "muse-spark", "mimo", "ling", "big-pickle", "nemotron-3-lightning"],
+    "note": "Los modelos gratuitos son promocionales y pueden desaparecer."
+  },
+  {
+    "id": "vercel",
+    "name": "Vercel AI Gateway",
+    "group": "email",
+    "base_url": "https://ai-gateway.vercel.sh/v1",
+    "env": "AI_GATEWAY_API_KEY",
+    "free": "USD 5 de crédito por mes en el subconjunto gratuito",
+    "signup": "https://vercel.com/docs/ai-gateway",
+    "only": "gpt-oss|gpt-5\\.4-mini|gemma-4|gemini-2\\.5-flash$|qwen3\\.8-flash|glm-5\\.3-flash|minimax-m3|nemotron-3-super|llama-4-maverick|grok-4\\.6|deepseek-v3\\.2",
+    "prefer": ["gpt-oss-120b", "llama-4-maverick", "gemma-4-31b", "glm-5\\.3-flash", "minimax-m3", "nemotron-3-super", "qwen3\\.8-flash", "gemini-2\\.5-flash", "gpt-5\\.4-mini", "grok", "deepseek"],
+    "note": "El crédito mensual solo se gasta en su subconjunto gratuito. Si comprás créditos, pasás al plan pago y el crédito mensual se corta."
+  },
+  {
+    "id": "ollama-cloud",
+    "name": "Ollama Cloud",
+    "group": "email",
+    "base_url": "https://ollama.com/v1",
+    "env": "OLLAMA_API_KEY",
+    "concurrent": 1,
+    "free": "Créditos iniciales mensuales, 1 pedido a la vez",
+    "signup": "https://ollama.com/settings/keys",
+    "prefer": ["gpt-oss:120b", "kimi-k3", "glm-5\\.3", "deepseek-v4", "minimax-m3", "mistral-large", "nemotron-3-super", "kimi", "glm"],
+    "note": "Los mismos nombres de modelo que Ollama local, corriendo en la nube."
+  },
+  {
+    "id": "cloudflare",
+    "name": "Cloudflare Workers AI",
+    "group": "email",
+    "base_url": "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1",
+    "env": "CLOUDFLARE_API_TOKEN",
+    "vars": { "account_id": { "env": "CLOUDFLARE_ACCOUNT_ID", "label": "ID de cuenta" } },
+    "free": "10.000 neuronas por día, compartidas entre modelos",
+    "signup": "https://dash.cloudflare.com/profile/api-tokens",
+    "list": false,
+    "models": ["@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/qwen/qwen3.8-27b", "@cf/google/gemma-4-26b-a4b-it",
+               "@cf/nvidia/nemotron-3-120b-a12b", "@cf/zai-org/glm-4.7-flash", "@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/openai/gpt-oss-20b"],
+    "note": "Además del token (con permiso de Workers AI) necesita el ID de tu cuenta. No publica su lista de modelos por esta API, así que la lista está fija en proveedores.json."
+  },
+  {
+    "id": "zai",
+    "name": "Z.ai (GLM)",
+    "group": "email",
+    "base_url": "https://api.z.ai/api/paas/v4",
+    "env": "ZAI_API_KEY",
+    "free": "Modelos GLM Flash gratuitos",
+    "signup": "https://docs.z.ai",
+    "only": "flash",
+    "prefer": ["glm-4\\.7-flash", "glm-4\\.6-flash", "glm-4\\.5-flash"],
+    "note": "Portal internacional de Zhipu. Solo los modelos Flash son gratis; los demás se cobran por token."
+  },
+  {
+    "id": "amd",
+    "name": "AMD Radeon Cloud",
+    "group": "email",
+    "base_url": "https://developer.amd.com.cn/radeon/api/v1",
+    "env": "AMD_API_KEY",
+    "free": "USD 10 de uso por día en los modelos públicos gratuitos",
+    "signup": "https://developer.amd.com.cn/radeon/tokenfactory",
+    "only": "DeepSeek-V4-Flash-0731|Qwen3\\.8-Flash",
+    "prefer": ["DeepSeek-V4-Flash", "Qwen3\\.8-Flash"],
+    "note": "El portal está en developer.amd.com.cn, el sitio de AMD en China."
+  },
+  {
+    "id": "sambanova",
+    "name": "SambaNova",
+    "group": "email",
+    "base_url": "https://api.sambanova.ai/v1",
+    "env": "SAMBANOVA_API_KEY",
+    "free": "20 pedidos por día",
+    "signup": "https://cloud.sambanova.ai/apis",
+    "prefer": ["gpt-oss-120b", "Llama-3\\.3-70B", "DeepSeek-V3\\.2", "MiniMax-M3", "Gemma-4", "DeepSeek", "MiniMax"],
+    "note": "Muy rápido, pero el límite gratuito es bajísimo: alcanza para una o dos discusiones por día."
   },
   {
     "id": "nvidia",
     "name": "NVIDIA NIM",
+    "group": "telefono",
     "base_url": "https://integrate.api.nvidia.com/v1",
     "env": "NVIDIA_API_KEY",
-    "signup": "https://build.nvidia.com",
-    "prefer": ["nemotron", "llama-3.3-70b", "qwen", "llama"],
-    "note": "Catálogo grande de modelos abiertos con acceso gratuito limitado por minuto."
+    "free": "40 pedidos por minuto",
+    "signup": "https://build.nvidia.com/settings/api-keys",
+    "prefer": ["nemotron-3-ultra", "nemotron-4-340b-instruct", "deepseek", "kimi", "glm", "mistral-large-4", "gpt-oss", "gemma-4", "nemotron-3\\.5-super", "llama-3\\.1-nemotron-ultra", "minimax", "nemotron"],
+    "note": "Catálogo grande de modelos abiertos. Pide verificar un teléfono y está pensado para evaluación."
   },
   {
     "id": "ollama",
-    "name": "Ollama (local)",
+    "name": "Ollama",
+    "group": "local",
     "base_url": "http://localhost:11434/v1",
     "local": true,
     "signup": "https://ollama.com/download",
-    "prefer": ["qwen", "llama", "gemma", "mistral", "phi"],
-    "note": "Modelos corriendo en tu máquina: sin key, sin cuotas y sin enviar nada afuera."
+    "prefer": ["qwen", "llama", "gemma", "mistral", "gpt-oss", "phi", "deepseek"],
+    "note": "Un comando y el modelo corre en tu máquina."
+  },
+  {
+    "id": "lmstudio",
+    "name": "LM Studio",
+    "group": "local",
+    "base_url": "http://localhost:1234/v1",
+    "local": true,
+    "signup": "https://lmstudio.ai",
+    "prefer": ["qwen", "llama", "gemma", "mistral", "gpt-oss", "phi", "deepseek"],
+    "note": "Como Ollama pero con interfaz gráfica. Hay que iniciar el servidor local desde la pestaña Developer."
+  },
+  {
+    "id": "llamacpp",
+    "name": "llama.cpp",
+    "group": "local",
+    "base_url": "http://localhost:8080/v1",
+    "local": true,
+    "signup": "https://github.com/ggml-org/llama.cpp/releases",
+    "note": "El motor sobre el que corre casi todo lo demás. Se inicia con llama-server."
+  },
+  {
+    "id": "jan",
+    "name": "Jan",
+    "group": "local",
+    "base_url": "http://localhost:1337/v1",
+    "local": true,
+    "signup": "https://jan.ai/download",
+    "prefer": ["qwen", "llama", "gemma", "mistral", "gpt-oss", "phi", "deepseek"],
+    "note": "Aplicación de escritorio de código abierto que funciona sin conexión."
   },
   {
     "id": "demo",
-    "name": "Demo (sin API)",
+    "name": "Demo (sin IA)",
+    "group": "demo",
     "kind": "mock",
-    "note": "Respuestas simuladas para probar el flujo completo sin ninguna key."
+    "note": "Respuestas simuladas para ver el flujo completo sin ningún proveedor."
   }
 ]

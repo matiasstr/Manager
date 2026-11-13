@@ -21,6 +21,9 @@ def main() -> None:
     args = ap.parse_args()
     if args.data:
         os.environ["MANAGER_DATA"] = args.data
+    exposed = args.host not in ("127.0.0.1", "localhost", "::1")
+    if exposed:
+        os.environ["MANAGER_LOCAL_ONLY"] = "0"  # se lee al importar la configuración, más abajo
 
     if args.mcp:
         from .mcp_server import server
@@ -34,6 +37,9 @@ def main() -> None:
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")
     print(f"\n  Manager: {url}\n  API:     {url}/docs\n", flush=True)
+    if exposed:
+        print("  ATENCION: con --host distinto de 127.0.0.1 cualquiera en tu red puede usar Manager,\n"
+              "  leer tu memoria y gastar tus keys. No tiene login.\n", flush=True)
     if not args.no_browser:
         threading.Timer(1.5, webbrowser.open, [url]).start()
     uvicorn.run("manager.api:app", host=args.host, port=args.port, log_level="warning")
