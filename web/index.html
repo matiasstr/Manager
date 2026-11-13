@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manager</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <aside class="nav">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+        <circle cx="16" cy="6" r="3.2"/><circle cx="6" cy="22" r="3.2"/><circle cx="26" cy="22" r="3.2"/><circle cx="16" cy="17" r="2.2"/>
+        <path d="M16 9v6M8.5 20.5l5.5-2.5M23.5 20.5 18 18" fill="none" stroke-width="1.6"/>
+      </svg>
+      <div><strong>Manager</strong><span>mini cerebro multiagente</span></div>
+    </div>
+    <nav id="nav">
+      <button data-go="discusion" class="on">Discusión</button>
+      <button data-go="consultar">Consultar</button>
+      <button data-go="modulos">Módulos</button>
+      <button data-go="memoria">Memoria</button>
+      <button data-go="agentes">Agentes</button>
+    </nav>
+    <div class="nav-foot" id="foot"></div>
+  </aside>
+
+  <main>
+    <section data-view="discusion"></section>
+    <section data-view="consultar" hidden></section>
+    <section data-view="modulos" hidden></section>
+    <section data-view="memoria" hidden></section>
+    <section data-view="agentes" hidden></section>
+  </main>
+
+  <div id="toasts"></div>
+  <dialog id="dialog"></dialog>
+  <script src="/static/app.js"></script>
+</body>
+</html>

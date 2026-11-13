@@ -1,0 +1,7 @@
+fastapi>=0.115
+uvicorn>=0.30
+openai>=1.50
+langgraph>=1.0
+numpy>=1.26
+fastembed>=0.6
+mcp>=2.0

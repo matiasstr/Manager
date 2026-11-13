@@ -1,0 +1,74 @@
+[
+  {
+    "id": "groq",
+    "name": "Groq",
+    "base_url": "https://api.groq.com/openai/v1",
+    "env": "GROQ_API_KEY",
+    "signup": "https://console.groq.com/keys",
+    "prefer": ["llama-3.3-70b", "gpt-oss-120b", "qwen", "llama", "gpt-oss"],
+    "note": "Muy rápido. Plan gratuito con límite por minuto y por día."
+  },
+  {
+    "id": "gemini",
+    "name": "Google Gemini",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "env": "GEMINI_API_KEY",
+    "signup": "https://aistudio.google.com/apikey",
+    "only": "^gemini|^gemma",
+    "prefer": ["flash-latest", "flash(?!-lite)", "flash-lite", "gemma"],
+    "note": "Gratis para los modelos Flash. En el plan gratuito Google puede usar los prompts para mejorar sus productos."
+  },
+  {
+    "id": "openrouter",
+    "name": "OpenRouter",
+    "base_url": "https://openrouter.ai/api/v1",
+    "env": "OPENROUTER_API_KEY",
+    "signup": "https://openrouter.ai/keys",
+    "only": ":free$|^openrouter/free$",
+    "prefer": ["^openrouter/free$", "gpt-oss-120b", "nemotron", "llama", "qwen"],
+    "default_model": "openrouter/free",
+    "note": "Una sola key para muchos modelos gratuitos (los que terminan en :free). La lista cambia seguido."
+  },
+  {
+    "id": "cerebras",
+    "name": "Cerebras",
+    "base_url": "https://api.cerebras.ai/v1",
+    "env": "CEREBRAS_API_KEY",
+    "signup": "https://cloud.cerebras.ai",
+    "prefer": ["gpt-oss-120b", "llama-3.3-70b", "qwen", "llama"],
+    "note": "Inferencia muy rápida. Revisá si tu cuenta todavía tiene plan gratuito."
+  },
+  {
+    "id": "mistral",
+    "name": "Mistral",
+    "base_url": "https://api.mistral.ai/v1",
+    "env": "MISTRAL_API_KEY",
+    "signup": "https://console.mistral.ai/api-keys",
+    "prefer": ["mistral-small-latest", "mistral-medium-latest", "open-mistral", "mistral-small"],
+    "note": "Plan Experiment gratuito; revisá las condiciones actuales en su consola."
+  },
+  {
+    "id": "nvidia",
+    "name": "NVIDIA NIM",
+    "base_url": "https://integrate.api.nvidia.com/v1",
+    "env": "NVIDIA_API_KEY",
+    "signup": "https://build.nvidia.com",
+    "prefer": ["nemotron", "llama-3.3-70b", "qwen", "llama"],
+    "note": "Catálogo grande de modelos abiertos con acceso gratuito limitado por minuto."
+  },
+  {
+    "id": "ollama",
+    "name": "Ollama (local)",
+    "base_url": "http://localhost:11434/v1",
+    "local": true,
+    "signup": "https://ollama.com/download",
+    "prefer": ["qwen", "llama", "gemma", "mistral", "phi"],
+    "note": "Modelos corriendo en tu máquina: sin key, sin cuotas y sin enviar nada afuera."
+  },
+  {
+    "id": "demo",
+    "name": "Demo (sin API)",
+    "kind": "mock",
+    "note": "Respuestas simuladas para probar el flujo completo sin ninguna key."
+  }
+]

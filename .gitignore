@@ -1,0 +1,8 @@
+# Datos locales: base de conocimiento y API keys. Nunca se suben.
+data/
+.env
+
+__pycache__/
+*.pyc
+.venv/
+.claude/
