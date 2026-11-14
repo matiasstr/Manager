@@ -9,6 +9,7 @@ consenso) que la interfaz consume por SSE para mostrar en vivo qué está hacien
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import operator
 import time
@@ -22,6 +23,12 @@ from . import config, db, llm, store
 from . import embeddings as emb
 
 EARLY_STOP = 0.88  # consenso a partir del cual no hace falta otra ronda
+
+# Un agente que deja de producir tokens por este tiempo se considera colgado y se pasa al
+# siguiente proveedor. No cuenta la espera por cupo (on_wait extiende el plazo), así que un
+# modelo lento pero que sigue escribiendo no se corta; solo se corta el que se quedó mudo.
+IDLE_STREAM = 30.0   # segundos sin un solo token nuevo en una respuesta en streaming
+IDLE_SINGLE = 60.0   # tope para una llamada no streameada (juez, destilado, ayudantes)
 
 
 # ───────────────────────── Eventos ─────────────────────────
@@ -179,15 +186,52 @@ async def _ask(run: Run, agent: dict, messages: list[dict], *, purpose: str, sta
             if visible:
                 run.emit("message_start", mid=mid, agent_id=aid, agent=agent["name"], color=agent["color"],
                          stage=stage, round=rnd, provider=pid, model=model, backup=tries > 1)
-            r = await llm.chat(
+
+            activity = time.monotonic()  # último signo de vida del modelo
+
+            def _touch() -> None:
+                nonlocal activity
+                activity = time.monotonic()
+
+            def _on_wait(secs: float, pid=pid, model=model) -> None:
+                nonlocal activity
+                activity = time.monotonic() + secs  # la espera por cupo no es un cuelgue
+                run.emit("message_wait", mid=mid, agent_id=aid, agent=agent["name"],
+                         seconds=secs, provider=pid, model=model, visible=visible)
+
+            def _on_delta(d: str) -> None:
+                _touch()
+                run.emit("message_delta", mid=mid, delta=d)
+
+            def _on_think() -> None:
+                _touch()
+                run.emit("message_thinking", mid=mid, agent_id=aid)
+
+            chat_task = asyncio.create_task(llm.chat(
                 pid, model, messages, temperature=agent["temperature"], max_tokens=max_tokens, json_mode=json_mode,
                 purpose=purpose, meta={"name": agent["name"], "round": rnd, "problem": problem},
-                on_delta=(lambda d: run.emit("message_delta", mid=mid, delta=d)) if visible else None,
+                on_delta=_on_delta if visible else None,
                 on_reset=(lambda: run.emit("message_reset", mid=mid)) if visible else None,
-                on_think=(lambda: run.emit("message_thinking", mid=mid, agent_id=aid)) if visible else None,
-                on_wait=lambda secs, pid=pid, model=model: run.emit(
-                    "message_wait", mid=mid, agent_id=aid, agent=agent["name"], seconds=secs, provider=pid, model=model, visible=visible),
-            )
+                on_think=_on_think if visible else None,
+                on_wait=_on_wait,
+            ))
+            limit = IDLE_STREAM if visible else IDLE_SINGLE
+            try:
+                while True:
+                    done, _ = await asyncio.wait({chat_task}, timeout=2.0)
+                    if chat_task in done:
+                        break
+                    if time.monotonic() - activity > limit:
+                        chat_task.cancel()
+                        with contextlib.suppress(asyncio.CancelledError, Exception):
+                            await chat_task
+                        raise llm.LLMError(f"sin respuesta en {int(limit)}s", model_level=True)
+            except asyncio.CancelledError:
+                chat_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError, Exception):
+                    await chat_task
+                raise
+            r = chat_task.result()
             r.text = llm.unfence(r.text)
             if visible:
                 run.emit("message_end", mid=mid, text=r.text, provider=r.provider, model=r.model, ms=r.ms)
@@ -304,7 +348,9 @@ async def n_evaluar(s: State) -> dict:
             disagreements = [str(x) for x in (data.get("desacuerdos") or [])][:4]
             by = "juez"
 
-    more = rnd < s["max_rounds"] and consensus < EARLY_STOP and bool(now)
+    # Nunca se corta en la primera ronda: siempre hay al menos una ronda de críticas antes de
+    # permitir el corte por consenso alto, así la charla no termina al toque.
+    more = rnd < s["max_rounds"] and (rnd < 2 or consensus < EARLY_STOP) and bool(now)
     ev = {"round": rnd, "consensus": round(consensus, 3), "semantic": round(semantic, 3), "by": by,
           "agreements": agreements, "disagreements": disagreements, "names": names, "matrix": matrix,
           "next": "criticar" if more else "sintetizar"}
