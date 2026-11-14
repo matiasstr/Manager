@@ -120,6 +120,16 @@ curl -X POST http://127.0.0.1:8765/api/ask -H "Content-Type: application/json" -
 }
 ```
 
+**Roles de ECC.** Los agentes de [ECC](https://github.com/affaan-m/ECC) (licencia MIT) se pueden traer como agentes de debate. El importador toma de cada uno quién es y en qué se fija, y descarta lo que es para un asistente de código (herramientas, comandos). Con Manager corriendo:
+
+```bash
+git clone --depth 1 https://github.com/affaan-m/ECC.git
+python herramientas/importar_ecc.py ECC --listar
+python herramientas/importar_ecc.py ECC security-reviewer architect planner
+```
+
+Entran apagados: se prenden al armar una discusión. Los roles quedan en inglés con la indicación de responder en español.
+
 ## Estructura
 
 ```

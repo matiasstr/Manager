@@ -40,6 +40,18 @@
     "note": "El más rápido. Hoy sus modelos gratuitos son gpt-oss y Qwen."
   },
   {
+    "id": "hyperbolic",
+    "name": "Hyperbolic",
+    "group": "email",
+    "base_url": "https://api.hyperbolic.ai/inference/v1",
+    "env": "HYPERBOLIC_API_KEY",
+    "free": "crédito inicial al registrarte; después es pago por uso",
+    "signup": "https://app.hyperbolic.ai/settings/api-keys",
+    "only": "(?i)qwen|qwq|llama|deepseek|mistral|mixtral|hermes|gemma|yi|phi|command",
+    "prefer": ["qwen3\\.8", "qwen3", "qwen", "deepseek", "llama"],
+    "note": "Modelos open como Qwen 3.8, Llama y DeepSeek. No es free-tier permanente: corre sobre créditos, así que se gasta con el uso."
+  },
+  {
     "id": "gemini",
     "name": "Google AI Studio (Gemini)",
     "group": "email",
