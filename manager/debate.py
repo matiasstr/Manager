@@ -348,7 +348,9 @@ async def n_evaluar(s: State) -> dict:
             disagreements = [str(x) for x in (data.get("desacuerdos") or [])][:4]
             by = "juez"
 
-    more = rnd < s["max_rounds"] and consensus < EARLY_STOP and bool(now)
+    # Nunca se corta en la primera ronda: siempre hay al menos una ronda de críticas antes de
+    # permitir el corte por consenso alto, así la charla no termina al toque.
+    more = rnd < s["max_rounds"] and (rnd < 2 or consensus < EARLY_STOP) and bool(now)
     ev = {"round": rnd, "consensus": round(consensus, 3), "semantic": round(semantic, 3), "by": by,
           "agreements": agreements, "disagreements": disagreements, "names": names, "matrix": matrix,
           "next": "criticar" if more else "sintetizar"}
